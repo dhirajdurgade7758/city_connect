@@ -1,0 +1,19 @@
+{% extends 'core/base.html' %}
+{% block title %}News & Alerts{% endblock %}
+{% block content %}
+<h3>City News & Alerts</h3>
+
+{% if news_items %}
+<div class="list-group mt-4">
+  {% for item in news_items %}
+  <div class="list-group-item mb-3">
+    <h5>{{ item.title }}</h5>
+    <small class="text-muted">Posted on {{ item.created_at|date:"M d, Y H:i" }}</small>
+    <p class="mt-2">{{ item.content }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-muted mt-4">No news or alerts available at this time.</p>
+{% endif %}
+{% endblock %}

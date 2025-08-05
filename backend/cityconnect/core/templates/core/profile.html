@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<h3>My Profile</h3>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Email:</strong> {{ user.email }}</p>
+    <p><strong>EcoCoins:</strong> {{ eco_coins }}</p>
+    <p><strong>Role:</strong> {{ user.role|title }}</p>
+  </div>
+</div>
+
+<h5>Activity Summary</h5>
+<div class="row text-center mb-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h6>Total Reports</h6>
+        <p class="fs-4">{{ report_count }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h6>Tasks Submitted</h6>
+        <p class="fs-4">{{ task_count }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h6>Redemptions</h6>
+        <p class="fs-4">{{ redemption_count }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h5>Recent Reports</h5>
+<ul class="list-group mb-3">
+  {% for report in recent_reports %}
+  <li class="list-group-item">
+    <strong>{{ report.title }}</strong> ({{ report.status }}) – {{ report.created_at|date:"M d, Y" }}
+  </li>
+  {% empty %}
+  <li class="list-group-item text-muted">No reports found.</li>
+  {% endfor %}
+</ul>
+
+<h5>Recent Tasks</h5>
+<ul class="list-group mb-3">
+  {% for task in recent_tasks %}
+  <li class="list-group-item">
+    {{ task.get_task_type_display }} – {{ task.submitted_at|date:"M d, Y" }}
+    {% if task.is_verified %}<span class="badge bg-success float-end">Verified</span>{% else %}<span class="badge bg-warning float-end">Pending</span>{% endif %}
+  </li>
+  {% empty %}
+  <li class="list-group-item text-muted">No tasks submitted yet.</li>
+  {% endfor %}
+</ul>
+
+<h5>Recent Redemptions</h5>
+<ul class="list-group mb-3">
+  {% for red in recent_redemptions %}
+  <li class="list-group-item">
+    {{ red.item_name }} – {{ red.coins_spent }} EcoCoins
+    <span class="badge bg-secondary float-end">{{ red.status }}</span>
+  </li>
+  {% empty %}
+  <li class="list-group-item text-muted">No redemptions yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

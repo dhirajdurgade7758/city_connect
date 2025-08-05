@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+{% block title %}EcoCoin Store{% endblock %}
+{% block content %}
+<h3>EcoCoin Store</h3>
+<p><strong>Your Balance:</strong> {{ request.user.eco_coins }} EcoCoins</p>
+
+<div class="row mt-4">
+  {% for item in items %}
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5>{{ item.name }}</h5>
+        <p>{{ item.coins }} EcoCoins</p>
+        {% if request.user.eco_coins >= item.coins %}
+        <form method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="item_name" value="{{ item.name }}">
+          <input type="hidden" name="coins_required" value="{{ item.coins }}">
+          <button type="submit" class="btn btn-sm btn-success">Redeem</button>
+        </form>
+        {% else %}
+        <button class="btn btn-sm btn-secondary" disabled>Not enough coins</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<hr>
+
+<h5>Your Redemption History</h5>
+<table class="table table-bordered">
+  <thead class="table-light">
+    <tr>
+      <th>Item</th>
+      <th>Coins Used</th>
+      <th>Status</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in redemptions %}
+    <tr>
+      <td>{{ r.item_name }}</td>
+      <td>{{ r.coins_spent }}</td>
+      <td>
+        {% if r.status == "Approved" %}
+          <span class="badge bg-success">Approved</span>
+        {% elif r.status == "Rejected" %}
+          <span class="badge bg-danger">Rejected</span>
+        {% else %}
+          <span class="badge bg-warning text-dark">Pending</span>
+        {% endif %}
+      </td>
+      <td>{{ r.requested_at|date:"M d, Y H:i" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" class="text-muted">No redemptions yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

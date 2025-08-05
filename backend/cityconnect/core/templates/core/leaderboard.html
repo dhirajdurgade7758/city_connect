@@ -1,0 +1,28 @@
+{% extends 'core/base.html' %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+<h3>Top EcoCoin Contributors</h3>
+
+<table class="table table-striped mt-4">
+  <thead class="table-dark">
+    <tr>
+      <th>#</th>
+      <th>Username</th>
+      <th>EcoCoins</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in top_users %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ user.username }}</td>
+      <td>{{ user.eco_coins }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="3">No data available.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,18 @@
+<!-- templates/core/partials/_task_card.html -->
+<div class="card mb-3">
+  <div class="card-body">
+    <h6 class="card-title">{{ task.get_task_type_display }}</h6>
+    <p class="card-text">{{ task.description|default:"No description" }}</p>
+    <p><strong>Status:</strong>
+      {% if task.is_verified %}
+        <span class="badge bg-success">Verified</span>
+      {% else %}
+        <span class="badge bg-warning">Pending</span>
+      {% endif %}
+    </p>
+    <p class="text-muted small">Submitted on {{ task.submitted_at|date:"M d, Y" }}</p>
+    {% if task.proof_image %}
+      <img src="{{ task.proof_image.url }}" class="img-fluid rounded" style="max-height: 200px;">
+    {% endif %}
+  </div>
+</div>

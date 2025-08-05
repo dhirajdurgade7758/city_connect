@@ -1,0 +1,78 @@
+{% extends 'core/base.html' %}
+{% block title %}Tasks{% endblock %}
+{% block content %}
+<h3>Do Civic Tasks & Earn EcoCoins</h3>
+
+<form method="post" enctype="multipart/form-data" class="mt-3 mb-4">
+  {% csrf_token %}
+  {{ form.as_p }}
+<img id="taskPreview" src="#" alt="Preview" style="max-width: 200px; display: none;" class="mt-2">
+
+  <button type="submit" class="btn btn-primary">Submit Task</button>
+</form>
+
+<h5>My Submitted Tasks</h5>
+{% if page_obj %}
+<table class="table table-bordered">
+  <thead class="table-light">
+    <tr>
+      <th>Type</th>
+      <th>Image</th>
+      <th>Status</th>
+      <th>Date</th>
+    </tr>
+  </thead>
+  <tbody>
+      {% for task in page_obj %}
+      <tr>
+        <td>{{ task.get_task_type_display }}</td>
+        <td>
+          {% if task.proof_image %}
+          <img src="{{ task.proof_image.url }}" width="100">
+          {% else %}
+          N/A
+          {% endif %}
+        </td>
+        <td>
+          {% if task.is_verified %}
+            <span class="badge bg-success">Verified</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">Pending</span>
+          {% endif %}
+        </td>
+        <td>{{ task.submitted_at|date:"M d, Y H:i" }}</td>
+      </tr>
+      {% empty %}
+    <p>No entries yet.</p>
+  {% endfor %}
+
+
+  </tbody>
+</table>
+<div class="mt-3">
+  <nav>
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+
+      <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% else %}
+<p class="text-muted">No tasks submitted yet.</p>
+{% endif %}
+{% endblock %}
