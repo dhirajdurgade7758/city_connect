@@ -13,42 +13,11 @@
 
 <h5>My Submitted Tasks</h5>
 {% if page_obj %}
-<table class="table table-bordered">
-  <thead class="table-light">
-    <tr>
-      <th>Type</th>
-      <th>Image</th>
-      <th>Status</th>
-      <th>Date</th>
-    </tr>
-  </thead>
-  <tbody>
-      {% for task in page_obj %}
-      <tr>
-        <td>{{ task.get_task_type_display }}</td>
-        <td>
-          {% if task.proof_image %}
-          <img src="{{ task.proof_image.url }}" width="100">
-          {% else %}
-          N/A
-          {% endif %}
-        </td>
-        <td>
-          {% if task.is_verified %}
-            <span class="badge bg-success">Verified</span>
-          {% else %}
-            <span class="badge bg-warning text-dark">Pending</span>
-          {% endif %}
-        </td>
-        <td>{{ task.submitted_at|date:"M d, Y H:i" }}</td>
-      </tr>
-      {% empty %}
-    <p>No entries yet.</p>
-  {% endfor %}
-
-
-  </tbody>
-</table>
+{% for report in page_obj %}
+  {% include 'core/partials/_task_card.html' %}
+{% empty %}
+  <p class="text-muted">No reports found.</p>
+{% endfor %}
 <div class="mt-3">
   <nav>
     <ul class="pagination">

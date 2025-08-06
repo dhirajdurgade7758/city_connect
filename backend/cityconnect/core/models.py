@@ -9,6 +9,7 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='citizen')
     eco_coins = models.PositiveIntegerField(default=0)
+    area = models.CharField(max_length=100, blank=True) 
 
     def __str__(self):
         return self.username
@@ -28,12 +29,14 @@ class Report(models.Model):
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
-    title = models.CharField(max_length=100)
-    description = models.TextField()
+    title = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='reports/', null=True, blank=True)
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    admin_feedback = models.TextField(blank=True, null=True)    
 
     def __str__(self):
         return f"{self.title} - {self.status}"
@@ -46,10 +49,39 @@ class Task(models.Model):
         ('other', 'Other'),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField(null=True, blank=True)
     task_type = models.CharField(max_length=20, choices=TASK_TYPE)
     proof_image = models.ImageField(upload_to='tasks/', null=True, blank=True)
     is_verified = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
+    admin_feedback = models.TextField(blank=True, null=True) 
+    eco_coins_awarded = models.PositiveIntegerField(default=0)
+
+    TASK_TYPE_CHOICES = [
+        ('cleanup', 'Public Cleanup'),
+        ('awareness', 'Awareness Campaign'),
+        ('donation', 'E-waste Donation'),
+    ]
+    task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.task_type}"
+
+    def award_eco_coins(self):
+        # Rule-based coin awarding
+        if self.task_type == 'cleanup':
+            self.eco_coins_awarded = 20
+        elif self.task_type == 'awareness':
+            self.eco_coins_awarded = 15
+        elif self.task_type == 'donation':
+            self.eco_coins_awarded = 25
+        self.save()
+
+        # Update user profile
+        profile = self.user.profile
+        profile.eco_coins += self.eco_coins_awarded
+        profile.save()
 
     def __str__(self):
         return f"{self.user.username} - {self.task_type}"

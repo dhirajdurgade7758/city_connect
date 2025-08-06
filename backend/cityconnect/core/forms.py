@@ -38,3 +38,5 @@ class ContactForm(forms.ModelForm):
         widgets = {
             'message': forms.Textarea(attrs={'rows': 4}),
         }
+
+

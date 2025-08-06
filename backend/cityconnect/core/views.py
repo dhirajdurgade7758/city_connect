@@ -22,7 +22,10 @@ def report_issue(request):
         if form.is_valid():
             report = form.save(commit=False)
             report.user = request.user
+            report = form.save(commit=False)
+            report.location = request.user.area
             report.save()
+
             return redirect('my_reports')
     else:
         form = ReportForm()
@@ -262,3 +265,61 @@ def redeem_history(request):
     page_obj = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'core/redeem_history.html', {'page_obj': page_obj})
+
+
+from .models import Report, Task, Redemption
+
+@login_required
+def dashboard(request):
+    user = request.user
+    profile = user
+
+    # Reports
+    reports = Report.objects.filter(user=user)
+    total_reports = reports.count()
+    recent_reports = reports.order_by('-created_at')[:5]
+
+    # Tasks
+    tasks = Task.objects.filter(user=user)
+    total_tasks = tasks.filter(is_verified=True).count()
+    pending_tasks = tasks.filter(is_verified=False).count()
+    recent_tasks = tasks.order_by('-submitted_at')[:5]
+
+    # Coins
+    total_coins = profile.eco_coins
+
+    # Redemption (optional: only if you have a Redemption model)
+    pending_redemptions = Redemption.objects.filter(user=user, status='pending').count() if 'Redemption' in globals() else 0
+
+    context = {
+        'total_reports': total_reports,
+        'total_tasks': total_tasks,
+        'total_coins': total_coins,
+        'pending_tasks': pending_tasks,
+        'pending_redemptions': pending_redemptions,
+        'recent_reports': recent_reports,
+        'recent_tasks': recent_tasks,
+    }
+
+    return render(request, 'core/dashboard.html', context)
+
+@login_required
+def area_issues(request):
+    user_area = request.user.area
+    public_reports = Report.objects.filter(location=user_area).exclude(user=request.user).order_by('-created_at')
+
+    paginator = Paginator(public_reports, 5)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'core/area_issues.html', {
+        'page_obj': page_obj,
+        'user_area': user_area
+    })
+
+
+def verify_task(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    task.is_verified = True
+    task.award_eco_coins()
+    messages.success(request, f"{task.eco_coins_awarded} EcoCoins awarded!")
+    return redirect('admin_task_list')

@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<h3 class="mb-4">👋 Welcome, {{ user.first_name|default:user.username }}!</h3>
+
+{% if pending_tasks or pending_redemptions %}
+<div class="alert alert-info">
+  {% if pending_tasks > 0 %}
+    <strong>{{ pending_tasks }}</strong> pending task(s){% if pending_redemptions > 0 %},{% endif %}
+  {% endif %}
+  {% if pending_redemptions > 0 %}
+    <strong>{{ pending_redemptions }}</strong> redemption request(s) awaiting approval.
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="row text-center mb-4">
+  <div class="col-md-4 mb-2">
+    <div class="card shadow-sm p-3 bg-light border-0 rounded">
+      <h5 class="mb-0">{{ total_reports }}</h5>
+      <small class="text-muted">Total Reports</small>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card shadow-sm p-3 bg-light border-0 rounded">
+      <h5 class="mb-0">{{ total_tasks }}</h5>
+      <small class="text-muted">Tasks Completed</small>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="card shadow-sm p-3 bg-light border-0 rounded">
+      <h5 class="mb-0">{{ total_coins }}</h5>
+      <small class="text-muted">EcoCoins</small>
+    </div>
+  </div>
+</div>
+
+<hr class="my-4">
+
+<h5>📋 Recent Reports</h5>
+{% if recent_reports %}
+  <div class="row">
+    {% for report in recent_reports %}
+      <div class="col-md-6 mb-3">
+        {% include 'core/partials/_report_card.html' %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted">No reports submitted yet.</p>
+{% endif %}
+
+<hr class="my-4">
+
+<h5>✅ Recent Tasks</h5>
+{% if recent_tasks %}
+  <div class="row">
+    {% for task in recent_tasks %}
+      <div class="col-md-6 mb-3">
+        {% include 'core/partials/_task_card.html' %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted">No tasks submitted yet.</p>
+{% endif %}
+
+{% endblock %}

@@ -12,18 +12,15 @@ class CustomUserAdmin(UserAdmin):
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'category', 'status', 'created_at')
-    list_filter = ('category', 'status')
-    search_fields = ('title', 'user__username')
-    readonly_fields = ('created_at',)
-
+    list_display = ('title', 'user', 'status')
+    list_filter = ('status',)
+    search_fields = ('title',)
+    fields = ('title', 'description', 'category', 'status', 'admin_feedback', 'user', 'image')
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('user', 'task_type', 'is_verified', 'submitted_at')
-    list_filter = ('task_type', 'is_verified')
-    search_fields = ('user__username',)
-    readonly_fields = ('submitted_at',)
+    list_display = ('user', 'task_type', 'is_verified')
+    fields = ('user', 'task_type', 'proof_image', 'is_verified', 'admin_feedback')
 
 
 @admin.register(Redemption)

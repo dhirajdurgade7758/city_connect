@@ -28,56 +28,12 @@
 </form>
 
 {% if page_obj %}
-<table class="table table-bordered mt-3">
-  <thead class="table-light">
-    <tr>
-      <th>Title</th>
-      <th>Category</th>
-      <th>Location</th>
-      <th>Status</th>
-      <th>Date</th>
-      <th>Image</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
     {% for report in page_obj %}
-    <tr>
-      <td>{{ report.title }}</td>
-      <td>{{ report.category }}</td>
-      <td>{{ report.location }}</td>
-      <td>
-        {% if report.status == "Resolved" %}
-          <span class="badge bg-success">{{ report.status }}</span>
-        {% elif report.status == "Rejected" %}
-          <span class="badge bg-danger">{{ report.status }}</span>
-        {% else %}
-          <span class="badge bg-secondary">{{ report.status }}</span>
-        {% endif %}
-      </td>
-      <td>{{ report.created_at|date:"M d, Y H:i" }}</td>
-      <td>
-        {% if report.image %}
-        <img src="{{ report.image.url }}" alt="report image" width="100" />
-        {% else %}
-        N/A
-        {% endif %}
-      </td>
-      <td>
-        {% if report.status == "Pending" %}
-          <a href="{% url 'edit_report' report.id %}" class="btn btn-sm btn-warning">Edit</a>
-          <a href="{% url 'delete_report' report.id %}" class="btn btn-sm btn-danger">Delete</a>
-        {% else %}
-          <span class="text-muted">Locked</span>
-        {% endif %}
-      </td>
+  {% include 'core/partials/_report_card.html' %}
+{% empty %}
+  <p class="text-muted">No reports found.</p>
+{% endfor %}
 
-    </tr>
-    {% empty %}
-    <p>No entries yet.</p>
-   {% endfor %}
-  </tbody>
-</table>
 <div class="mt-3">
   <nav>
     <ul class="pagination">

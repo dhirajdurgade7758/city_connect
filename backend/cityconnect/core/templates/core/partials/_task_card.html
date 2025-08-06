@@ -15,4 +15,8 @@
       <img src="{{ task.proof_image.url }}" class="img-fluid rounded" style="max-height: 200px;">
     {% endif %}
   </div>
+  {% if task.admin_feedback %}
+  <p class="mt-2 text-danger"><strong>Admin Feedback:</strong> {{ task.admin_feedback }}</p>
+{% endif %}
+
 </div>

@@ -4,26 +4,11 @@
 <h3>Redemption History</h3>
 
 {% if page_obj %}
-<table class="table table-striped mt-3">
-  <thead>
-    <tr>
-      <th>Item</th>
-      <th>Coins Spent</th>
-      <th>Status</th>
-      <th>Date</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for redemption in page_obj %}
-    <tr>
-      <td>{{ redemption.item_name }}</td>
-      <td>{{ redemption.coins_spent }}</td>
-      <td><span class="badge bg-{{ redemption.status|lower }}">{{ redemption.status }}</span></td>
-      <td>{{ redemption.requested_at|date:"M d, Y H:i" }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+{% for redemption in page_obj %}
+  {% include 'core/partials/_redemption_card.html' %}
+{% empty %}
+  <p class="text-muted">No reports found.</p>
+{% endfor %}
 
 <!-- Pagination -->
 <nav>

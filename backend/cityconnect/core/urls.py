@@ -1,8 +1,9 @@
 from django.urls import path
 from . import views
-
+from django.urls import path
+from .groq_chat import chat_api
 urlpatterns = [
-    path('', views.home, name='home'),
+    path('', views.dashboard, name='home'),
     path('report/', views.report_issue, name='report_issue'),
     path('my-reports/', views.my_reports, name='my_reports'),
     path('tasks/', views.tasks, name='tasks'),
@@ -14,7 +15,9 @@ urlpatterns = [
     path('report/<int:report_id>/edit/', views.edit_report, name='edit_report'),
     path('report/<int:report_id>/delete/', views.delete_report, name='delete_report'),
     path('redemptions/', views.redeem_history, name='redeem_history'),
-
+    path('area-issues/', views.area_issues, name='area_issues'),
+    path('api/chat/', chat_api, name='chat_api'),
+    
 
 ]
 
