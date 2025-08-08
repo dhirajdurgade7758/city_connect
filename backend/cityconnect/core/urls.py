@@ -18,10 +18,12 @@ urlpatterns = [
     path('area-issues/', views.area_issues, name='area_issues'),
     path('api/chat/', chat_api, name='chat_api'),
     path('post/', views.create_issue_post, name='create_issue_post'),
-    path('feed/', views.feed, name='feed'),
-    path('post/<int:pk>/', views.post_detail, name='post_detail'),
-    path('like/<int:pk>/', views.toggle_like, name='toggle_like'),
-
+        path('feed/', views.feed, name='feed'),
+path('post/<int:post_id>/', views.post_detail, name='post_detail'),
+path('post/<int:post_id>/like/', views.toggle_like, name='toggle_like'),
+path('post/<int:post_id>/update-status/', views.update_post_status, name='update_post_status'),
+path('post/<int:post_id>/comments/', views.post_comments, name='post_comments'),
+path('post/<int:post_id>/comments/form/', views.comment_form, name='comment_form'),
 ]
 
 

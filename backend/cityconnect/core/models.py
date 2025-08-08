@@ -125,23 +125,54 @@ class Redemption(models.Model):
         return f"{self.item_name} - {self.user.username}"
 
 
+from django.db import models
+from django.utils import timezone
+
 class IssuePost(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+    ]
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='issue_posts')
     title = models.CharField(max_length=150)
     description = models.TextField()
     image = models.ImageField(upload_to='issue_posts/', blank=True, null=True)
     area = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
-    likes_count = models.PositiveIntegerField(default=0)  # updated manually
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='pending'
+    )
+    likes_count = models.PositiveIntegerField(default=0)
+    comments_count = models.PositiveIntegerField(default=0)
+    location_details = models.CharField(max_length=200, blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name = 'Issue Post'
+        verbose_name_plural = 'Issue Posts'
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['area']),
+        ]
 
-    def is_liked_by(self, user):
+    def is_liked_by(self):
+        user = self.user
         return self.likes.filter(user=user).exists()
+
+    def update_counts(self):
+        """Update denormalized counts"""
+        self.likes_count = self.likes.count()
+        self.comments_count = self.comments.count()
+        self.save(update_fields=['likes_count', 'comments_count'])
 
 
 class Like(models.Model):
@@ -151,18 +182,41 @@ class Like(models.Model):
 
     class Meta:
         unique_together = ('user', 'post')
+        verbose_name = 'Like'
+        verbose_name_plural = 'Likes'
+        indexes = [
+            models.Index(fields=['-timestamp']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} liked {self.post.title}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.post.update_counts()
+
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(IssuePost, on_delete=models.CASCADE, related_name='comments')
     text = models.TextField(max_length=300)
     timestamp = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'Comment'
+        verbose_name_plural = 'Comments'
+        indexes = [
+            models.Index(fields=['-timestamp']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} on {self.post.title}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.post.update_counts()
 
 
 # models.py

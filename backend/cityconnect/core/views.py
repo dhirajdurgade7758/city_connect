@@ -383,76 +383,241 @@ def create_issue_post(request):
     return render(request, 'core/create_issue_post.html', {'form': form})
 
 
-from .models import IssuePost
+# from .models import IssuePost
+
+# @login_required
+# def feed(request):
+#     area_filter = request.GET.get('area')
+    
+#     if area_filter:
+#         posts = IssuePost.objects.filter(area__iexact=area_filter).select_related('user').prefetch_related('likes', 'comments')
+#     else:
+#         posts = IssuePost.objects.all().select_related('user').prefetch_related('likes', 'comments')
+
+#     # optional: show unique areas for dropdown filter
+#     areas = IssuePost.objects.values_list('area', flat=True).distinct()
+
+#     return render(request, 'core/feed.html', {
+#         'posts': posts,
+#         'area_filter': area_filter,
+#         'areas': areas,
+#     })
+
+
+# from django.shortcuts import get_object_or_404
+
+# from .forms import CommentForm
+
+# @login_required
+# def post_detail(request, pk):
+#     post = get_object_or_404(IssuePost, id=pk)
+#     comments = post.comments.select_related('user').order_by('-timestamp')
+
+#     if request.method == 'POST':
+#         form = CommentForm(request.POST)
+#         if form.is_valid():
+#             new_comment = form.save(commit=False)
+#             new_comment.user = request.user
+#             new_comment.post = post
+#             new_comment.save()
+#             return redirect('post_detail', pk=post.pk)
+#     else:
+#         form = CommentForm()
+
+#     return render(request, 'core/post_detail.html', {
+#         'post': post,
+#         'comments': comments,
+#         'form': form,
+#     })
+
+
+
+# from django.http import HttpResponseRedirect
+# from django.urls import reverse
+# from .models import Like, IssuePost
+
+# @login_required
+# def toggle_like(request, pk):
+#     post = get_object_or_404(IssuePost, id=pk)
+#     like, created = Like.objects.get_or_create(user=request.user, post=post)
+
+#     if not created:
+#         # Already liked → unlike
+#         like.delete()
+#         post.likes_count = post.likes.count()
+#     else:
+#         # New like
+#         post.likes_count = post.likes.count()
+
+#         # Optional: Award coins for 10+ likes
+#         if post.likes_count == 10:
+#             post.user.eco_coins += 5
+#             post.user.save()
+
+#     post.save()
+#     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/feed/'))
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.db.models import Count, Q
+from django.core.paginator import Paginator
+from .models import IssuePost, Like, Comment
+from .forms import CommentForm
 
 @login_required
 def feed(request):
     area_filter = request.GET.get('area')
+    status_filter = request.GET.get('status')
+    search_query = request.GET.get('q')
     
+    # Base queryset
+    posts = IssuePost.objects.select_related('user')\
+                           .prefetch_related('likes', 'comments')
+    
+    # Apply filters
     if area_filter:
-        posts = IssuePost.objects.filter(area__iexact=area_filter).select_related('user').prefetch_related('likes', 'comments')
-    else:
-        posts = IssuePost.objects.all().select_related('user').prefetch_related('likes', 'comments')
-
-    # optional: show unique areas for dropdown filter
+        posts = posts.filter(area__iexact=area_filter)
+    
+    if status_filter:
+        posts = posts.filter(status=status_filter)
+    
+    if search_query:
+        posts = posts.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(location_details__icontains=search_query)
+        )
+    
+    # Get distinct areas for filter dropdown
     areas = IssuePost.objects.values_list('area', flat=True).distinct()
-
-    return render(request, 'core/feed.html', {
-        'posts': posts,
+    
+    # Pagination
+    paginator = Paginator(posts, 10)  # Show 10 posts per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'posts': page_obj,
         'area_filter': area_filter,
+        'status_filter': status_filter,
+        'search_query': search_query,
         'areas': areas,
-    })
+        'status_choices': IssuePost.STATUS_CHOICES,
+    }
+    
+    return render(request, 'core/feed.html', context)
 
-
-from django.shortcuts import get_object_or_404
-
-from .forms import CommentForm
 
 @login_required
-def post_detail(request, pk):
-    post = get_object_or_404(IssuePost, id=pk)
-    comments = post.comments.select_related('user').order_by('-timestamp')
+def toggle_like(request, post_id):
+    print(f"Like toggle initiated by user {request.user.id} for post {post_id}")
+    post = get_object_or_404(IssuePost, id=post_id)
+    
+    # Debug current like state
+    # current_state = post.is_liked_by(request.user)
+    # print(f"Current like state before toggle: {current_state}")
+    
+    like, created = Like.objects.get_or_create(
+        user=request.user,
+        post=post
+    )
+    
+    if not created:
+        like.delete()
+        print("Like removed")
+    else:
+        print("Like added")
+    
+    context = {
+        'post': post,
+        'request': request
+    }
+    return render(request, 'core/partials/post_card.html', context)
 
+
+@login_required
+def post_detail(request, post_id):
+    post = get_object_or_404(
+        IssuePost.objects.select_related('user')
+                        .prefetch_related('likes', 'comments__user'),
+        id=post_id
+    )
+    
     if request.method == 'POST':
         form = CommentForm(request.POST)
         if form.is_valid():
-            new_comment = form.save(commit=False)
-            new_comment.user = request.user
-            new_comment.post = post
-            new_comment.save()
-            return redirect('post_detail', pk=post.pk)
+            comment = form.save(commit=False)
+            comment.user = request.user
+            comment.post = post
+            comment.save()
+            return redirect('post_detail', post_id=post.id)
     else:
         form = CommentForm()
-
-    return render(request, 'core/post_detail.html', {
-        'post': post,
+    comments = post.comments.select_related('user').order_by('-timestamp')
+    context = {
         'comments': comments,
+        'post': post,
         'form': form,
-    })
+        'is_liked_by': post.is_liked_by(request.user),
+    }
+    
+    return render(request, 'core/post_detail.html', context)
 
-
-
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from .models import Like, IssuePost
 
 @login_required
-def toggle_like(request, pk):
-    post = get_object_or_404(IssuePost, id=pk)
-    like, created = Like.objects.get_or_create(user=request.user, post=post)
+def update_post_status(request, post_id):
+    if request.method == 'POST' and request.user.is_staff:
+        post = get_object_or_404(IssuePost, id=post_id)
+        new_status = request.POST.get('status')
+        
+        if new_status in dict(IssuePost.STATUS_CHOICES).keys():
+            post.status = new_status
+            post.save()
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'status': 'success',
+                    'new_status': post.get_status_display()
+                })
+    
+    return redirect('post_detail', post_id=post_id)
 
-    if not created:
-        # Already liked → unlike
-        like.delete()
-        post.likes_count = post.likes.count()
-    else:
-        # New like
-        post.likes_count = post.likes.count()
 
-        # Optional: Award coins for 10+ likes
-        if post.likes_count == 10:
-            post.user.eco_coins += 5
-            post.user.save()
+@login_required
+def post_comments(request, post_id):
+    """View to handle comment display and creation"""
+    post = get_object_or_404(IssuePost, id=post_id)
+    
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.user = request.user
+            comment.post = post
+            comment.save()
+            
+            if request.headers.get('HX-Request'):
+                # Return the updated comments list for HTMX
+                comments = post.comments.select_related('user').order_by('-timestamp')
+                return render(request, 'core/partials/comments_list.html', {
+                    'comments': comments,
+                    'post': post
+                })
+            return redirect('feed')
+    
+    # GET request - return all comments
+    comments = post.comments.select_related('user').order_by('-timestamp')
+    return render(request, 'core/partials/comments_list.html', {
+        'comments': comments,
+        'post': post
+    })
 
-    post.save()
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/feed/'))
+@login_required
+def comment_form(request, post_id):
+    """Return just the comment form for HTMX"""
+    post = get_object_or_404(IssuePost, id=post_id)
+    comments = post.comments.select_related('user').order_by('-timestamp')
+    return render(request, 'core/partials/comment_form.html', {
+        'comments': comments,
+        'post': post
+    })
