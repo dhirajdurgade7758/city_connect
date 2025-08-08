@@ -10,6 +10,7 @@ from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 
 from django.core.mail import send_mail
+from .utils import get_badge_info 
 
 def home(request):
     return render(request, 'core/home.html')
@@ -151,7 +152,19 @@ def profile(request):
 @login_required
 def leaderboard(request):
     User = get_user_model()
-    top_users = User.objects.filter(role='citizen').order_by('-eco_coins')[:10]
+    top_users_raw = User.objects.filter(role='citizen').order_by('-eco_coins')[:10]
+
+    # Attach badge info to each user
+    top_users = []
+    for user in top_users_raw:
+        badge_name, badge_color, badge_emoji = get_badge_info(user.eco_coins)
+        top_users.append({
+            'user': user,
+            'badge_name': badge_name,
+            'badge_color': badge_color,
+            'badge_emoji': badge_emoji,
+        })
+
     return render(request, 'core/leaderboard.html', {'top_users': top_users})
 
 
@@ -267,12 +280,14 @@ def redeem_history(request):
     return render(request, 'core/redeem_history.html', {'page_obj': page_obj})
 
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 from .models import Report, Task, Redemption
-
+from .utils import get_badge_info, get_user_badges  # assuming utils.py contains these functions
+from .models import UserBadge
 @login_required
 def dashboard(request):
     user = request.user
-    profile = user
 
     # Reports
     reports = Report.objects.filter(user=user)
@@ -286,10 +301,24 @@ def dashboard(request):
     recent_tasks = tasks.order_by('-submitted_at')[:5]
 
     # Coins
-    total_coins = profile.eco_coins
+    total_coins = user.eco_coins
+    badge_name, badge_color, badge_emoji = get_badge_info(total_coins)
 
-    # Redemption (optional: only if you have a Redemption model)
-    pending_redemptions = Redemption.objects.filter(user=user, status='pending').count() if 'Redemption' in globals() else 0
+    # Redemption (optional)
+    pending_redemptions = Redemption.objects.filter(user=user, status='pending').count() if Redemption in globals() else 0
+
+    # Achievement Badges
+    achievement_badges = get_user_badges(user)
+        # Badge notifications
+    new_badges = UserBadge.objects.filter(user=user).order_by('-unlocked_at')[:5]
+    if not request.session.get('notified_badges'):
+        request.session['notified_badges'] = [b.badge_name for b in new_badges]
+        notify_badges = new_badges
+    else:
+        notify_badges = [
+            b for b in new_badges if b.badge_name not in request.session['notified_badges']
+        ]
+        request.session['notified_badges'] += [b.badge_name for b in notify_badges]
 
     context = {
         'total_reports': total_reports,
@@ -299,9 +328,18 @@ def dashboard(request):
         'pending_redemptions': pending_redemptions,
         'recent_reports': recent_reports,
         'recent_tasks': recent_tasks,
+
+        # Coin-based badge
+        'badge_name': badge_name,
+        'badge_color': badge_color,
+        'badge_emoji': badge_emoji,
+
+        # Achievement badges
+        'achievement_badges': achievement_badges,
     }
 
     return render(request, 'core/dashboard.html', context)
+
 
 @login_required
 def area_issues(request):
@@ -323,3 +361,98 @@ def verify_task(request, task_id):
     task.award_eco_coins()
     messages.success(request, f"{task.eco_coins_awarded} EcoCoins awarded!")
     return redirect('admin_task_list')
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .forms import IssuePostForm
+from .models import IssuePost
+
+@login_required
+def create_issue_post(request):
+    if request.method == 'POST':
+        form = IssuePostForm(request.POST, request.FILES)
+        if form.is_valid():
+            issue = form.save(commit=False)
+            issue.user = request.user
+            issue.save()
+            return redirect('feed')  # We'll create 'feed' in the next step
+    else:
+        form = IssuePostForm()
+
+    return render(request, 'core/create_issue_post.html', {'form': form})
+
+
+from .models import IssuePost
+
+@login_required
+def feed(request):
+    area_filter = request.GET.get('area')
+    
+    if area_filter:
+        posts = IssuePost.objects.filter(area__iexact=area_filter).select_related('user').prefetch_related('likes', 'comments')
+    else:
+        posts = IssuePost.objects.all().select_related('user').prefetch_related('likes', 'comments')
+
+    # optional: show unique areas for dropdown filter
+    areas = IssuePost.objects.values_list('area', flat=True).distinct()
+
+    return render(request, 'core/feed.html', {
+        'posts': posts,
+        'area_filter': area_filter,
+        'areas': areas,
+    })
+
+
+from django.shortcuts import get_object_or_404
+
+from .forms import CommentForm
+
+@login_required
+def post_detail(request, pk):
+    post = get_object_or_404(IssuePost, id=pk)
+    comments = post.comments.select_related('user').order_by('-timestamp')
+
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            new_comment = form.save(commit=False)
+            new_comment.user = request.user
+            new_comment.post = post
+            new_comment.save()
+            return redirect('post_detail', pk=post.pk)
+    else:
+        form = CommentForm()
+
+    return render(request, 'core/post_detail.html', {
+        'post': post,
+        'comments': comments,
+        'form': form,
+    })
+
+
+
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from .models import Like, IssuePost
+
+@login_required
+def toggle_like(request, pk):
+    post = get_object_or_404(IssuePost, id=pk)
+    like, created = Like.objects.get_or_create(user=request.user, post=post)
+
+    if not created:
+        # Already liked → unlike
+        like.delete()
+        post.likes_count = post.likes.count()
+    else:
+        # New like
+        post.likes_count = post.likes.count()
+
+        # Optional: Award coins for 10+ likes
+        if post.likes_count == 10:
+            post.user.eco_coins += 5
+            post.user.save()
+
+    post.save()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/feed/'))

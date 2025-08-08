@@ -1,13 +1,30 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, Report, Task, Redemption, News
+from django.utils.translation import gettext_lazy as _
 
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'role', 'eco_coins', 'is_staff')
-    list_filter = ('role', 'is_staff')
-    search_fields = ('username', 'email')
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name', 'email', 'area')}),
+        (_('Permissions'), {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'role'),
+        }),
+        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+        (_('Eco System'), {'fields': ('eco_coins',)}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2', 'email', 'role', 'area', 'eco_coins'),
+        }),
+    )
+    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'eco_coins', 'area', 'is_staff')
+    search_fields = ('username', 'first_name', 'last_name', 'email', 'area')
+    ordering = ('username',)
+
 
 
 @admin.register(Report)
@@ -36,3 +53,10 @@ class NewsAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_by', 'created_at')
     search_fields = ('title', 'created_by__username')
     readonly_fields = ('created_at',)
+
+
+from .models import IssuePost, Like, Comment
+
+admin.site.register(IssuePost)
+admin.site.register(Like)
+admin.site.register(Comment)

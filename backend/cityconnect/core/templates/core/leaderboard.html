@@ -12,17 +12,22 @@
     </tr>
   </thead>
   <tbody>
-    {% for user in top_users %}
-    <tr>
-      <td>{{ forloop.counter }}</td>
-      <td>{{ user.username }}</td>
-      <td>{{ user.eco_coins }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="3">No data available.</td>
-    </tr>
-    {% endfor %}
+{% for entry in top_users %}
+<tr class="text-center align-middle">
+  <td>{{ forloop.counter }}</td>
+  <td>
+    {{ entry.user.first_name|default:entry.user.username }}
+    <br><small class="text-muted">@{{ entry.user.username }}</small>
+  </td>
+  <td>
+    <span class="badge bg-{{ entry.badge_color }} px-2 py-1">
+      {{ entry.badge_emoji }} {{ entry.badge_name }}
+    </span>
+  </td>
+  <td><strong>{{ entry.user.eco_coins }}</strong></td>
+</tr>
+{% endfor %}
+
   </tbody>
 </table>
 {% endblock %}

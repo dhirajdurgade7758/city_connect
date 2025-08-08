@@ -40,3 +40,31 @@ class ContactForm(forms.ModelForm):
         }
 
 
+from django import forms
+from .models import IssuePost
+
+class IssuePostForm(forms.ModelForm):
+    class Meta:
+        model = IssuePost
+        fields = ['title', 'description', 'image', 'area']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Issue title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe the issue'}),
+            'area': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter area'}),
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+
+from .models import Comment
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['text']
+        widgets = {
+            'text': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Add a comment...'
+            })
+        }

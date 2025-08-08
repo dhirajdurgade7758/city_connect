@@ -87,16 +87,6 @@ class Task(models.Model):
         return f"{self.user.username} - {self.task_type}"
 
 
-class Redemption(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    item_name = models.CharField(max_length=100)
-    coins_spent = models.PositiveIntegerField()
-    status = models.CharField(max_length=20, default='Pending')
-    requested_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.user.username} - {self.item_name}"
-
 
 class News(models.Model):
     title = models.CharField(max_length=200)
@@ -133,3 +123,61 @@ class Redemption(models.Model):
 
     def __str__(self):
         return f"{self.item_name} - {self.user.username}"
+
+
+class IssuePost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='issue_posts')
+    title = models.CharField(max_length=150)
+    description = models.TextField()
+    image = models.ImageField(upload_to='issue_posts/', blank=True, null=True)
+    area = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    likes_count = models.PositiveIntegerField(default=0)  # updated manually
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def is_liked_by(self, user):
+        return self.likes.filter(user=user).exists()
+
+
+class Like(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(IssuePost, on_delete=models.CASCADE, related_name='likes')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f"{self.user.username} liked {self.post.title}"
+
+class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(IssuePost, on_delete=models.CASCADE, related_name='comments')
+    text = models.TextField(max_length=300)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} on {self.post.title}"
+
+
+# models.py
+
+class UserBadge(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    badge_type = models.CharField(max_length=20, choices=[
+        ('eco', 'EcoCoin Badge'),
+        ('achievement', 'Achievement Badge')
+    ])
+    badge_name = models.CharField(max_length=100)
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'badge_name')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.badge_name}"

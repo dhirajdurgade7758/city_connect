@@ -2,12 +2,42 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 
-<h3 class="mb-4">👋 Welcome, {{ user.first_name|default:user.username }}!</h3>
+<h3 class="mb-2">👋 Welcome, {{ user.first_name|default:user.username }}!</h3>
+{% if notify_badges %}
+  <div class="alert alert-success">
+    <strong>🎉 Congratulations!</strong>
+    You've unlocked new badge(s):
+    <ul class="mb-0 mt-1">
+      {% for badge in notify_badges %}
+        <li>{{ badge.badge_name }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
 
+<!-- Coin-Level Badge -->
+<div class="mb-3">
+  <h6>Your EcoCoin Rank:</h6>
+  <span class="badge bg-{{ badge_color }} p-2 fs-6">
+    {{ badge_emoji }} {{ badge_name }}
+  </span>
+</div>
+
+<!-- Achievement Badges -->
+{% if achievement_badges %}
+  <div class="mb-4">
+    <h6>🏅 Your Achievement Badges:</h6>
+    {% for badge in achievement_badges %}
+      <span class="badge bg-success me-2 mb-1">{{ badge }}</span>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<!-- Alerts -->
 {% if pending_tasks or pending_redemptions %}
 <div class="alert alert-info">
   {% if pending_tasks > 0 %}
-    <strong>{{ pending_tasks }}</strong> pending task(s){% if pending_redemptions > 0 %},{% endif %}
+    <strong>{{ pending_tasks }}</strong> pending task(s){% if pending_redemptions > 0 %}, {% endif %}
   {% endif %}
   {% if pending_redemptions > 0 %}
     <strong>{{ pending_redemptions }}</strong> redemption request(s) awaiting approval.
@@ -15,6 +45,7 @@
 </div>
 {% endif %}
 
+<!-- Stats Cards -->
 <div class="row text-center mb-4">
   <div class="col-md-4 mb-2">
     <div class="card shadow-sm p-3 bg-light border-0 rounded">
@@ -38,6 +69,7 @@
 
 <hr class="my-4">
 
+<!-- Recent Reports -->
 <h5>📋 Recent Reports</h5>
 {% if recent_reports %}
   <div class="row">
@@ -53,6 +85,7 @@
 
 <hr class="my-4">
 
+<!-- Recent Tasks -->
 <h5>✅ Recent Tasks</h5>
 {% if recent_tasks %}
   <div class="row">

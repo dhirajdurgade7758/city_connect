@@ -1,0 +1,72 @@
+{% extends 'core/base.html' %}
+{% block title %}City Feed{% endblock %}
+{% block content %}
+
+<h4 class="mb-4">📍 Civic Issue Feed</h4>
+<form method="GET" class="mb-4">
+  <div class="input-group" style="max-width: 300px;">
+    <select class="form-select" name="area" onchange="this.form.submit()">
+      <option value="">🔍 Filter by area</option>
+      {% for area in areas %}
+        <option value="{{ area }}" {% if area == area_filter %}selected{% endif %}>{{ area }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+{% if area_filter %}
+  <p class="text-muted">Showing posts in: <strong>{{ area_filter }}</strong></p>
+{% endif %}
+
+{% for post in posts %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">{{ post.title }}</h5>
+      <p class="card-text">{{ post.description }}</p>
+      {% if post.image %}
+        <img src="{{ post.image.url }}" alt="issue image" class="img-fluid rounded mb-2">
+      {% endif %}
+      <p class="text-muted mb-1">
+        🧑 Posted by {{ post.user.username }} | 📍 {{ post.area }} | 🕒 {{ post.created_at|timesince }} ago
+      </p>
+      <div>
+        <form method="POST" action="{% url 'toggle_like' post.id %}" style="display:inline;">
+  {% csrf_token %}
+  {% if post.is_liked_by%}
+    <button type="submit" class="btn btn-sm btn-danger">❤️ {{ post.likes.count }}</button>
+  {% else %}
+    <button type="submit" class="btn btn-sm btn-outline-danger">❤️ {{ post.likes.count }}</button>
+  {% endif %}
+</form>
+
+{% if post.is_liked_by %}
+  <button class="btn btn-danger">Liked</button>
+{% else %}
+  <button class="btn btn-outline-danger">Like</button>
+{% endif %}
+
+ |
+        💬 {{ post.comments.count }} Comments
+        <a href="{% url 'post_detail' post.id %}" class="btn btn-sm btn-outline-primary float-end">View</a>
+<button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('{{ request.scheme }}://{{ request.get_host }}{% url 'post_detail' post.id %}')">
+  🔗 Share
+</button>
+
+
+      </div>
+    </div>
+  </div>
+{% empty %}
+  <p>No issues posted yet. Be the first to report one!</p>
+{% endfor %}
+<script>
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Post link copied to clipboard!");
+    }).catch(err => {
+      alert("Failed to copy: " + err);
+    });
+  }
+</script>
+
+
+{% endblock %}

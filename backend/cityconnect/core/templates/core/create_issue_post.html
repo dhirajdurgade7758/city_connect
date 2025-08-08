@@ -1,0 +1,13 @@
+ {% extends 'core/base.html' %}
+{% block title %}Post an Issue{% endblock %}
+{% block content %}
+
+<h4 class="mb-4">📢 Report a Civic Issue</h4>
+
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary mt-2">Submit</button>
+</form>
+
+{% endblock %}

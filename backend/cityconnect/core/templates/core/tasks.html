@@ -13,7 +13,7 @@
 
 <h5>My Submitted Tasks</h5>
 {% if page_obj %}
-{% for report in page_obj %}
+{% for task in page_obj %}
   {% include 'core/partials/_task_card.html' %}
 {% empty %}
   <p class="text-muted">No reports found.</p>
