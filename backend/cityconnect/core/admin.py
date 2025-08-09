@@ -55,8 +55,9 @@ class NewsAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
 
 
-from .models import IssuePost, Like, Comment
+from .models import IssuePost, Like, Comment,SavedPost
 
 admin.site.register(IssuePost)
 admin.site.register(Like)
 admin.site.register(Comment)
+admin.site.register(SavedPost)

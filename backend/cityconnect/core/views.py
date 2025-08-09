@@ -495,9 +495,11 @@ def feed(request):
     paginator = Paginator(posts, 10)  # Show 10 posts per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+    saved_posts = SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True)
+
     context = {
         'posts': page_obj,
+        'saved_posts': saved_posts,
         'area_filter': area_filter,
         'status_filter': status_filter,
         'search_query': search_query,
@@ -621,3 +623,39 @@ def comment_form(request, post_id):
         'comments': comments,
         'post': post
     })
+
+from django.shortcuts import redirect, get_object_or_404
+from .models import IssuePost, SavedPost
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
+def toggle_save_post(request, post_id):
+    post = get_object_or_404(IssuePost, id=post_id)
+    saved, created = SavedPost.objects.get_or_create(user=request.user, post=post)
+
+    if not created:
+        saved.delete()
+
+    # Get updated saved posts list after toggle
+    saved_posts = SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True)
+
+
+    context = {
+        'post': post,
+        'saved_posts': saved_posts,
+        'csrf_token': request.META.get("CSRF_COOKIE")
+    }
+
+    return render(request, 'core/partials/post_card.html', context)
+
+
+@login_required
+def saved_posts_view(request):
+    posts = (
+        IssuePost.objects
+        .filter(savedpost__user=request.user)  # only posts that are saved by this user
+        .select_related('user')               # optimize FK to user
+        .prefetch_related('likes', 'comments') # optimize related sets
+    )
+    return render(request, 'core/saved_posts.html', {'saved_posts': posts})

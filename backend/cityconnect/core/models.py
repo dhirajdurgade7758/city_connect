@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+
 # Extended user with roles (Citizen or Admin)
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -134,7 +135,7 @@ class IssuePost(models.Model):
         ('in_progress', 'In Progress'),
         ('resolved', 'Resolved'),
     ]
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True, editable=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='issue_posts')
     title = models.CharField(max_length=150)
     description = models.TextField()
@@ -235,3 +236,14 @@ class UserBadge(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.badge_name}"
+    
+class SavedPost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_posts')
+    post = models.ForeignKey(IssuePost, on_delete=models.CASCADE)
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f"{self.user.username} saved {self.post.id}"

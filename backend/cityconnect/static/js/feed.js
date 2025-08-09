@@ -216,14 +216,16 @@ function addComment() {
     });
 }
 
+
 function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showToast('Link copied!', 'Post link copied to clipboard', 'success');
-    }).catch(err => {
-        showToast('Error', 'Failed to copy link', 'error');
-        console.error('Failed to copy: ', err);
+    navigator.clipboard.writeText(text).then(function() {
+        alert("📋 Link copied to clipboard!");
+    }).catch(function(err) {
+        console.error("Failed to copy: ", err);
     });
 }
+
+
 
 function showToast(title, message, type = 'success') {
     const toast = document.getElementById('toast');

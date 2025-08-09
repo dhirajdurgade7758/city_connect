@@ -1,5 +1,6 @@
 <!-- core/partials/post_card.html -->
 <div class="complaint-card {% if post.status == 'resolved' %}accent-green{% endif %}" data-post-id="{{ post.id }}">
+    
     <!-- Post Header -->
     <div class="card-header">
         <div class="avatar">
@@ -43,25 +44,54 @@
     </div>
     
     <!-- Actions -->
-    <div class="card-actions">
-        <div class="action-buttons">
-            <!-- Replace your like button with this version -->
+    <div class="card-actions d-flex align-items-center justify-content-between mt-2">
+        
+        <!-- Left: Like + Comment -->
+        <div class="action-buttons d-flex align-items-center gap-2">
+            <!-- Like -->
             <button hx-post="{% url 'toggle_like' post.id %}"
-        hx-target="closest .complaint-card"
-        hx-swap="outerHTML"
-        hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-        class="action-btn like-btn {% if post.is_liked_by %}active{% endif %}"
-        aria-label="{% if post.is_liked_by %}Unlike{% else %}Like{% endif %} this post">
-                <i class="bi {% if post.is_liked_by %}bi-heart-fill text-red-500{% else %}bi-heart text-gray-500{% endif %}"></i>
-                <span class="like-count ml-1">{{ post.likes.count }}</span>
+                hx-target="closest .complaint-card"
+                hx-swap="outerHTML"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                class="btn btn-sm btn-outline-danger {% if post.is_liked_by %}active{% endif %}"
+                title="{% if post.is_liked_by %}Unlike{% else %}Like{% endif %}">
+                <i class="bi {% if post.is_liked_by %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                <span>{{ post.likes.count }}</span>
             </button>
-            <button class="action-btn comment-btn" onclick="openCommentModal('{{ post.id }}')">
-                <span class="icon-comment"></span>
-                <span class="comment-count">{{ post.comments.count }}</span>
+
+            <!-- Comment -->
+            <button class="btn btn-sm btn-outline-secondary" onclick="openCommentModal('{{ post.id }}')" title="Comment">
+                <i class="bi bi-chat"></i>
+                <span>{{ post.comments.count }}</span>
             </button>
         </div>
-        <button class="action-btn share-btn" onclick="copyToClipboard('{{ request.scheme }}://{{ request.get_host }}{% url 'post_detail' post.id %}')">
-            <span class="icon-bookmark"></span>
+
+        <!-- Right: Save + Share -->
+        <div class="d-flex align-items-center gap-2">
+            <!-- Save -->
+           <!-- Save -->
+<form hx-post="{% url 'toggle_save_post' post.id %}" 
+      hx-target="closest .complaint-card"
+      hx-swap="outerHTML"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% if post.id in saved_posts %}
+        <button type="submit" class="btn btn-sm btn-warning" title="Unsave">
+            <i class="bi bi-bookmark-fill text-dark"></i>
         </button>
+    {% else %}
+        <button type="submit" class="btn btn-sm btn-outline-primary" title="Save">
+            <i class="bi bi-bookmark text-primary"></i>
+        </button>
+    {% endif %}
+</form>
+
+
+            <!-- Share -->
+            <button type="button" class="btn btn-sm btn-outline-success" 
+                onclick="copyToClipboard('{{ request.scheme }}://{{ request.get_host }}{% url 'post_detail' post.id %}')" 
+                title="Share Post">
+                <i class="bi bi-share"></i>
+            </button>
+        </div>
     </div>
 </div>
