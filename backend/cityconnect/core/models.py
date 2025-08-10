@@ -117,10 +117,10 @@ class Redemption(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    item_name = models.CharField(max_length=100)
-    coins_spent = models.PositiveIntegerField()
-    requested_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
+    item_name = models.CharField(max_length=100, null=True, blank=True)
+    coins_spent = models.PositiveIntegerField(null=True, blank=True)
+    requested_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending', null=True, blank=True)
 
     def __str__(self):
         return f"{self.item_name} - {self.user.username}"

@@ -1,0 +1,482 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}EcoCoin Store{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="{% static 'css/store.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="store-container">
+     Header Section 
+    <div class="store-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="store-title">
+                        <i class="fas fa-store"></i>
+                        EcoCoin Store
+                    </h1>
+                    <p class="store-subtitle">Redeem your eco-coins for amazing rewards</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="coin-balance">
+                        <div class="coin-display">
+                            <i class="fas fa-coins"></i>
+                            <span class="coin-amount">{{ request.user.eco_coins }}</span>
+                            <span class="coin-label">EcoCoins</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     Messages 
+    {% if messages %}
+        <div class="container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show custom-alert" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+     Filters and Search 
+    <div class="container mb-4">
+        <div class="filters-section">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search offers..." class="form-control">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="filter-controls">
+                        <select id="categoryFilter" class="form-select">
+                            <option value="all">All Categories</option>
+                            <option value="shop_offer">Shop Offers</option>
+                            <option value="donor_gift">Donor Gifts</option>
+                            <option value="event_ticket">Event Tickets</option>
+                            <option value="eco_reward">Eco Rewards</option>
+                        </select>
+                        <select id="sortFilter" class="form-select">
+                            <option value="name">Sort by Name</option>
+                            <option value="coins_asc">Coins: Low to High</option>
+                            <option value="coins_desc">Coins: High to Low</option>
+                            <option value="stock">Stock Available</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     Store Content 
+    <div class="container">
+         Category Tabs 
+        <div class="category-tabs mb-4">
+            <ul class="nav nav-pills justify-content-center" id="categoryTabs">
+                <li class="nav-item">
+                    <a class="nav-link active" data-category="all" href="#all">
+                        <i class="fas fa-th-large"></i> All
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-category="shop_offer" href="#shop">
+                        <i class="fas fa-shopping-bag"></i> Shop Offers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-category="donor_gift" href="#gifts">
+                        <i class="fas fa-gift"></i> Donor Gifts
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-category="event_ticket" href="#events">
+                        <i class="fas fa-ticket-alt"></i> Event Tickets
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-category="eco_reward" href="#eco">
+                        <i class="fas fa-leaf"></i> Eco Rewards
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+         Offers Grid 
+        <div class="offers-grid" id="offersGrid">
+             Shop Offers 
+            {% for offer in shop_offers %}
+                <div class="offer-card" data-category="shop_offer" data-name="{{ offer.name|lower }}" data-coins="{{ offer.coins_required }}" data-stock="{{ offer.stock }}">
+                    <div class="card h-100">
+                        <div class="card-image-container">
+                            {% if offer.image %}
+                                <img src="{{ offer.image.url }}" class="card-img-top" alt="{{ offer.name }}">
+                            {% else %}
+                                <div class="placeholder-image">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                            {% endif %}
+                            <div class="card-overlay">
+                                <button class="btn btn-outline-light btn-sm" onclick="toggleWishlist({{ offer.id }})">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="quickView({{ offer.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="category-badge shop-offer">
+                                <i class="fas fa-shopping-bag"></i> Shop Offer
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ offer.name }}</h5>
+                            <p class="card-description">{{ offer.description|truncatewords:15 }}</p>
+                            
+                            <div class="offer-details">
+                                <div class="detail-item">
+                                    <i class="fas fa-coins"></i>
+                                    <span>{{ offer.coins_required }} coins</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ offer.location_name }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-box"></i>
+                                    <span>{{ offer.stock }} left</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>Until {{ offer.end_date }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            {% if offer.is_available %}
+                                {% if request.user.eco_coins >= offer.coins_required %}
+                                    <button class="btn btn-primary w-100 redeem-btn" onclick="redeemOffer({{ offer.id }}, '{{ offer.name }}', {{ offer.coins_required }})">
+                                        <i class="fas fa-shopping-cart"></i> Redeem Now
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-secondary w-100" disabled>
+                                        <i class="fas fa-coins"></i> Need {{ offer.coins_required|add:request.user.eco_coins|add:"-"|add:request.user.eco_coins }} more coins
+                                    </button>
+                                {% endif %}
+                            {% else %}
+                                <button class="btn btn-danger w-100" disabled>
+                                    <i class="fas fa-times"></i> Unavailable
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+             Donor Gifts 
+            {% for offer in donor_gifts %}
+                <div class="offer-card" data-category="donor_gift" data-name="{{ offer.name|lower }}" data-coins="{{ offer.coins_required }}" data-stock="{{ offer.stock }}">
+                    <div class="card h-100">
+                        <div class="card-image-container">
+                            {% if offer.image %}
+                                <img src="{{ offer.image.url }}" class="card-img-top" alt="{{ offer.name }}">
+                            {% else %}
+                                <div class="placeholder-image">
+                                    <i class="fas fa-gift"></i>
+                                </div>
+                            {% endif %}
+                            <div class="card-overlay">
+                                <button class="btn btn-outline-light btn-sm" onclick="toggleWishlist({{ offer.id }})">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="quickView({{ offer.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="category-badge donor-gift">
+                                <i class="fas fa-gift"></i> Donor Gift
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ offer.name }}</h5>
+                            <p class="card-description">{{ offer.description|truncatewords:15 }}</p>
+                            
+                            <div class="offer-details">
+                                <div class="detail-item">
+                                    <i class="fas fa-coins"></i>
+                                    <span>{{ offer.coins_required }} coins</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ offer.location_name }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-box"></i>
+                                    <span>{{ offer.stock }} left</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>Until {{ offer.end_date }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            {% if offer.is_available %}
+                                {% if request.user.eco_coins >= offer.coins_required %}
+                                    <button class="btn btn-success w-100 redeem-btn" onclick="redeemOffer({{ offer.id }}, '{{ offer.name }}', {{ offer.coins_required }})">
+                                        <i class="fas fa-gift"></i> Claim Gift
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-secondary w-100" disabled>
+                                        <i class="fas fa-coins"></i> Need More Coins
+                                    </button>
+                                {% endif %}
+                            {% else %}
+                                <button class="btn btn-danger w-100" disabled>
+                                    <i class="fas fa-times"></i> Unavailable
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+             Event Tickets 
+            {% for offer in event_tickets %}
+                <div class="offer-card" data-category="event_ticket" data-name="{{ offer.name|lower }}" data-coins="{{ offer.coins_required }}" data-stock="{{ offer.stock }}">
+                    <div class="card h-100">
+                        <div class="card-image-container">
+                            {% if offer.image %}
+                                <img src="{{ offer.image.url }}" class="card-img-top" alt="{{ offer.name }}">
+                            {% else %}
+                                <div class="placeholder-image">
+                                    <i class="fas fa-ticket-alt"></i>
+                                </div>
+                            {% endif %}
+                            <div class="card-overlay">
+                                <button class="btn btn-outline-light btn-sm" onclick="toggleWishlist({{ offer.id }})">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="quickView({{ offer.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="category-badge event-ticket">
+                                <i class="fas fa-ticket-alt"></i> Event Ticket
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ offer.name }}</h5>
+                            <p class="card-description">{{ offer.description|truncatewords:15 }}</p>
+                            
+                            <div class="offer-details">
+                                <div class="detail-item">
+                                    <i class="fas fa-coins"></i>
+                                    <span>{{ offer.coins_required }} coins</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ offer.location_name }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-box"></i>
+                                    <span>{{ offer.stock }} left</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>Until {{ offer.end_date }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            {% if offer.is_available %}
+                                {% if request.user.eco_coins >= offer.coins_required %}
+                                    <button class="btn btn-info w-100 redeem-btn" onclick="redeemOffer({{ offer.id }}, '{{ offer.name }}', {{ offer.coins_required }})">
+                                        <i class="fas fa-ticket-alt"></i> Get Ticket
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-secondary w-100" disabled>
+                                        <i class="fas fa-coins"></i> Need More Coins
+                                    </button>
+                                {% endif %}
+                            {% else %}
+                                <button class="btn btn-danger w-100" disabled>
+                                    <i class="fas fa-times"></i> Unavailable
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+             Eco Rewards 
+            {% for offer in eco_rewards %}
+                <div class="offer-card" data-category="eco_reward" data-name="{{ offer.name|lower }}" data-coins="{{ offer.coins_required }}" data-stock="{{ offer.stock }}">
+                    <div class="card h-100">
+                        <div class="card-image-container">
+                            {% if offer.image %}
+                                <img src="{{ offer.image.url }}" class="card-img-top" alt="{{ offer.name }}">
+                            {% else %}
+                                <div class="placeholder-image">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                            {% endif %}
+                            <div class="card-overlay">
+                                <button class="btn btn-outline-light btn-sm" onclick="toggleWishlist({{ offer.id }})">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="quickView({{ offer.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="category-badge eco-reward">
+                                <i class="fas fa-leaf"></i> Eco Reward
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ offer.name }}</h5>
+                            <p class="card-description">{{ offer.description|truncatewords:15 }}</p>
+                            
+                            <div class="offer-details">
+                                <div class="detail-item">
+                                    <i class="fas fa-coins"></i>
+                                    <span>{{ offer.coins_required }} coins</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>{{ offer.location_name }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-box"></i>
+                                    <span>{{ offer.stock }} left</span>
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>Until {{ offer.end_date }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            {% if offer.is_available %}
+                                {% if request.user.eco_coins >= offer.coins_required %}
+                                    <button class="btn btn-success w-100 redeem-btn" onclick="redeemOffer({{ offer.id }}, '{{ offer.name }}', {{ offer.coins_required }})">
+                                        <i class="fas fa-leaf"></i> Claim Reward
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-secondary w-100" disabled>
+                                        <i class="fas fa-coins"></i> Need More Coins
+                                    </button>
+                                {% endif %}
+                            {% else %}
+                                <button class="btn btn-danger w-100" disabled>
+                                    <i class="fas fa-times"></i> Unavailable
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+         Empty State 
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No offers found</h4>
+                <p class="text-muted">Try adjusting your search or filter criteria</p>
+            </div>
+        </div>
+
+         No Offers State 
+        {% if not shop_offers and not donor_gifts and not event_tickets and not eco_rewards %}
+            <div class="no-offers-state">
+                <div class="text-center py-5">
+                    <i class="fas fa-store fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No offers available</h4>
+                    <p class="text-muted">Check back later for exciting deals and rewards!</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+ Redeem Confirmation Modal 
+<div class="modal fade" id="redeemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shopping-cart"></i> Confirm Redemption
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="redemption-icon mb-3">
+                        <i class="fas fa-coins fa-3x text-warning"></i>
+                    </div>
+                    <h6>Are you sure you want to redeem:</h6>
+                    <h5 id="redeemOfferName" class="text-primary mb-3"></h5>
+                    <div class="coin-transaction">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="coin-info">
+                                    <small class="text-muted">Current Balance</small>
+                                    <div class="coin-amount">{{ request.user.eco_coins }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="coin-info">
+                                    <small class="text-muted">After Redemption</small>
+                                    <div class="coin-amount" id="afterRedemption"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmRedeem">
+                    <i class="fas fa-check"></i> Confirm Redemption
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+ Quick View Modal 
+<div class="modal fade" id="quickViewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick View</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quickViewContent">
+                 Content loaded dynamically 
+            </div>
+        </div>
+    </div>
+</div>
+
+ Loading Overlay 
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin fa-2x"></i>
+        <p>Processing your redemption...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/store.js' %}"></script>
+{% endblock %}

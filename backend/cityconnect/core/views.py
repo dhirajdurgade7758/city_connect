@@ -659,3 +659,4 @@ def saved_posts_view(request):
         .prefetch_related('likes', 'comments') # optimize related sets
     )
     return render(request, 'core/saved_posts.html', {'saved_posts': posts})
+

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Report, Task, Redemption, News
+from .models import User, Report, Task,News
 from django.utils.translation import gettext_lazy as _
 
 
@@ -40,14 +40,6 @@ class TaskAdmin(admin.ModelAdmin):
     fields = ('user', 'task_type', 'proof_image', 'is_verified', 'admin_feedback')
 
 
-@admin.register(Redemption)
-class RedemptionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'item_name', 'coins_spent', 'status', 'requested_at')
-    list_filter = ('status',)
-    search_fields = ('user__username', 'item_name')
-    readonly_fields = ('requested_at',)
-
-
 @admin.register(News)
 class NewsAdmin(admin.ModelAdmin):
     list_display = ('title', 'created_by', 'created_at')
@@ -60,4 +52,3 @@ from .models import IssuePost, Like, Comment,SavedPost
 admin.site.register(IssuePost)
 admin.site.register(Like)
 admin.site.register(Comment)
-admin.site.register(SavedPost)

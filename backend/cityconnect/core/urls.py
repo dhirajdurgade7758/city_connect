@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 from django.urls import path
 from .groq_chat import chat_api
@@ -7,7 +7,7 @@ urlpatterns = [
     path('report/', views.report_issue, name='report_issue'),
     path('my-reports/', views.my_reports, name='my_reports'),
     path('tasks/', views.tasks, name='tasks'),
-    path('store/', views.store, name='store'),
+    path('store/', include('store.urls')),
     path('news/', views.news, name='news'),
     path('profile/', views.profile, name='profile'),
     path('leaderboard/', views.leaderboard, name='leaderboard'),
