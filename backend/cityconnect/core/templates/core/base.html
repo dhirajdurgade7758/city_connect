@@ -1,96 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>{% block title %}CityConnect{% endblock %}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>   
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}CityConnect{% endblock %}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>   
 <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-  {% block extra_css %}{% endblock extra_css %}
+{% block extra_css %}{% endblock extra_css %}
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  main {
+    flex: 1;
+  }
+  .navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+  }
+  .chat-toggle-btn {
+    background-color: #007bff; /* Bootstrap primary blue */
+    border-color: #007bff;
+    transition: background-color 0.3s ease;
+  }
+  .chat-toggle-btn:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    border-color: #0056b3;
+  }
+  #chat-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+  #chat-body {
+    background-color: #f8f9fa;
+  }
+  .modal-overlay {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1060; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+      justify-content: center;
+      align-items: center;
+  }
+
+  .modal-content {
+      background-color: #fefefe;
+      margin: auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%; /* Could be more responsive */
+      max-width: 700px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+      overflow: hidden;
+  }
+
+  .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+  }
+
+  .modal-header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+  }
+
+  .close-btn {
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+  }
+
+  .close-btn:hover,
+  .close-btn:focus {
+      color: #000;
+      text-decoration: none;
+      cursor: pointer;
+  }
+
+  .modal-body {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding-right: 15px; /* For scrollbar */
+  }
+
+  .comments-section {
+      margin-top: 20px;
+  }
+
+  .comment-item {
+      background-color: #f9f9f9;
+      border: 1px solid #e9e9e9;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+  }
+
+  .comment-author {
+      font-weight: bold;
+      color: #333;
+  }
+
+  .comment-date {
+      font-size: 0.85em;
+      color: #777;
+      margin-left: 10px;
+  }
+
+  .comment-text {
+      margin-top: 5px;
+      color: #555;
+  }
+
+  .comment-form {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+  }
+
+  .comment-form textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical;
+      min-height: 80px;
+  }
+
+  .comment-form button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+  }
+
+  .comment-form button:hover {
+      background-color: #0056b3;
+  }
+
+  .loading-spinner {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+  }
+
+  .loading-spinner i {
+      animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+  }
+  .empty-state {
+      color: #6c757d;
+  }
+
+  .empty-icon {
+      font-size: 4rem;
+      line-height: 1;
+  }
+</style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light px-4">
-    <a class="navbar-brand" href="{% url 'home' %}">CityConnect</a>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3 px-4 shadow-sm sticky-top">
+  <a class="navbar-brand" href="{% url 'home' %}">CityConnect</a>
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
     <ul class="navbar-nav ms-auto">
       <li class="nav-item">
-  <a class="nav-link" href="{% url 'tasks' %}">
-    My Tasks
-    {% if pending_tasks > 0 %}
-      <span class="badge bg-warning text-dark">{{ pending_tasks }}</span>
-    {% endif %}
-  </a>
-</li>
-
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'redeem_history' %}">
-    My Redemptions
-    {% if pending_redemptions > 0 %}
-      <span class="badge bg-danger">{{ pending_redemptions }}</span>
-    {% endif %}
-  </a>
-</li>
-
-        <li class="nav-item"><a class="nav-link" href="{% url 'contact' %}">Help</a></li>
-        <a href="{% url 'area_issues' %}" class="btn btn-outline-primary mt-3">See Public Issues in Your Area</a>
-
+        <a class="nav-link" href="{% url 'feed' %}">Feed</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'tasks' %}">
+          My Tasks
+          {% if pending_tasks > 0 %}
+            <span class="badge bg-warning text-dark rounded-pill ms-1">{{ pending_tasks }}</span>
+          {% endif %}
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'redemption_history' %}">
+          My Redemptions
+          {% if pending_redemptions > 0 %}
+            <span class="badge bg-danger rounded-pill ms-1">{{ pending_redemptions }}</span>
+          {% endif %}
+        </a>
+      </li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'contact' %}">Help</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'create_issue_post' %}">Report</a></li>
-      <li class="nav-item"><a class="nav-link" href="{% url 'my_reports' %}">My Reports</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'tasks' %}">Tasks</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'store_view' %}">Store</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'news' %}">News</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'leaderboard' %}">Leaderboard</a></li>
-
-
       <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}">Profile</a></li>
       {% if user.is_authenticated %}
-  <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
-{% else %}
-  <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-  <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Register</a></li>
-{% endif %}
-
+        <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li>
+      {% else %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Register</a></li>
+      {% endif %}
     </ul>
-  </nav>
-<section class='container mt-4 mx-auto'>
+  </div>
+</nav>
 
+<main class="container mt-4 mb-5">
   {% block content %}
   {% endblock %}
+</main>
 
-</section>
 <!-- Chat UI -->
 <!-- Chatbot Launcher Button -->
-<button id="chat-toggle" class="btn btn-primary rounded-circle shadow" style="position:fixed;bottom:20px;right:20px;z-index:1050;width:60px;height:60px;">
+<button id="chat-toggle" class="btn btn-primary rounded-circle shadow chat-toggle-btn" style="position:fixed;bottom:20px;right:20px;z-index:1050;width:60px;height:60px;display:flex;align-items:center;justify-content:center;">
   <i class="fas fa-comments fa-lg text-white"></i>
 </button>
 
 <!-- Chat Container -->
-<div id="chat-container" class="shadow" style="position:fixed;bottom:90px;right:20px;width:350px;max-height:500px;display:none;flex-direction:column;background:#fff;border-radius:12px;overflow:hidden;z-index:1050;border:1px solid #dee2e6;">
-  <div class="bg-primary text-white p-2 fw-bold">🤖 PuneBot — Ask me anything about Pune!</div>
-  <div id="chat-body" class="p-2" style="height:350px;overflow-y:auto;background:#f8f9fa;font-size:14px;"></div>
-  <div class="d-flex border-top p-2">
+<div id="chat-container" class="shadow" style="position:fixed;bottom:90px;right:20px;width:350px;max-height:500px;display:none;flex-direction:column;background:#fff;border-radius:12px;overflow:hidden;z-index:1050;">
+  <div class="bg-primary text-white p-3 fw-bold d-flex justify-content-between align-items-center">
+    <span>🤖 PuneBot — Ask me anything about Pune!</span>
+    <button type="button" class="btn-close btn-close-white" aria-label="Close" id="chat-close-btn"></button>
+  </div>
+  <div id="chat-body" class="p-3" style="flex-grow:1; overflow-y:auto; background:#f8f9fa; font-size:0.9rem;"></div>
+  <div class="d-flex border-top p-3">
     <input id="chat-input" type="text" class="form-control me-2" placeholder="Ask about Pune..." />
     <button id="chat-submit" class="btn btn-success">Send</button>
   </div>
 </div>
 
+<footer class="bg-dark text-white text-center py-3 mt-auto">
+  <div class="container">
+    <p class="mb-0">&copy; {% now "Y" %} CityConnect. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   const toggleBtn = document.getElementById('chat-toggle');
   const chatBox = document.getElementById('chat-container');
   const chatInput = document.getElementById('chat-input');
   const chatBody = document.getElementById('chat-body');
+  const chatCloseBtn = document.getElementById('chat-close-btn');
 
   toggleBtn.onclick = () => {
     chatBox.style.display = (chatBox.style.display === 'flex') ? 'none' : 'flex';
   };
 
+  chatCloseBtn.onclick = () => {
+    chatBox.style.display = 'none';
+  };
+
   function appendMessage(sender, text, isMarkdown = false) {
     const wrapper = document.createElement('div');
-    wrapper.classList.add('mb-2');
-    const timestamp = new Date().toLocaleTimeString();
+    wrapper.classList.add('mb-3');
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    let messageHTML = isMarkdown ? marked.parse(text) : `<p>${text}</p>`;
+    let messageHTML = isMarkdown ? marked.parse(text) : `<p class="mb-0">${text}</p>`;
     wrapper.innerHTML = `
-      <div class="fw-bold small">${sender} <span class="text-muted float-end small">${timestamp}</span></div>
+      <div class="fw-bold small text-muted mb-1">${sender} <span class="float-end">${timestamp}</span></div>
       <div class="border rounded p-2 bg-white">${messageHTML}</div>
     `;
     chatBody.appendChild(wrapper);
@@ -104,21 +297,28 @@
     appendMessage("You", message);
     chatInput.value = '';
 
-    const response = await fetch("{% url 'chat_api' %}", {
-      method: "POST",
-      headers: { "X-CSRFToken": "{{ csrf_token }}" },
-      body: new URLSearchParams({ message })
-    });
+    try {
+      const response = await fetch("{% url 'chat_api' %}", {
+        method: "POST",
+        headers: { 
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({ message })
+      });
 
-    const data = await response.json();
-    if (data.reply) {
-      appendMessage("PuneBot", data.reply, true); // Render as markdown
-    } else {
-      appendMessage("PuneBot", "Sorry, something went wrong.");
+      const data = await response.json();
+      if (data.reply) {
+        appendMessage("PuneBot", data.reply, true); // Render as markdown
+      } else {
+        appendMessage("PuneBot", "Sorry, something went wrong.");
+      }
+    } catch (error) {
+      console.error("Error fetching chat reply:", error);
+      appendMessage("PuneBot", "Sorry, I couldn't connect to the chatbot. Please try again later.");
     }
   };
 </script>
-
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -149,6 +349,5 @@
     });
   });
 </script>
-
 </body>
 </html>

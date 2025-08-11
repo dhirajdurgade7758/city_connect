@@ -1,13 +1,90 @@
- {% extends 'core/base.html' %}
-{% block title %}Post an Issue{% endblock %}
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Report a Civic Issue{% endblock %}
+
 {% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0">📢 Report a Civic Issue</h4>
+                    <p class="mb-0">Help improve your city by reporting problems.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">Issue Title <span class="text-danger">*</span></label>
+                            {{ form.title }}
+                            {% if form.title.errors %}<div class="text-danger">{{ form.title.errors }}</div>{% endif %}
+                            <div class="form-text text-muted">{{ form.title.help_text }}</div>
+                        </div>
 
-<h4 class="mb-4">📢 Report a Civic Issue</h4>
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description <span class="text-danger">*</span></label>
+                            {{ form.description }}
+                            {% if form.description.errors %}<div class="text-danger">{{ form.description.errors }}</div>{% endif %}
+                            <div class="form-text text-muted">{{ form.description.help_text }}</div>
+                        </div>
 
-<form method="POST" enctype="multipart/form-data">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit" class="btn btn-primary mt-2">Submit</button>
-</form>
+                        <div class="mb-3">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">Relevant Department <span class="text-danger">*</span></label>
+                            {{ form.department }}
+                            {% if form.department.errors %}<div class="text-danger">{{ form.department.errors }}</div>{% endif %}
+                            <div class="form-text text-muted">{{ form.department.help_text }}</div>
+                        </div>
 
+                        <div class="mb-3">
+                            <label for="{{ form.area.id_for_label }}" class="form-label">Area <span class="text-danger">*</span></label>
+                            {{ form.area }}
+                            {% if form.area.errors %}<div class="text-danger">{{ form.area.errors }}</div>{% endif %}
+                            <div class="form-text text-muted">e.g., Downtown, Sector 12</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.location_details.id_for_label }}" class="form-label">Specific Location Details</label>
+                            {{ form.location_details }}
+                            {% if form.location_details.errors %}<div class="text-danger">{{ form.location_details.errors }}</div>{% endif %}
+                            <div class="form-text text-muted">{{ form.location_details.help_text }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label">Upload Image (Optional)</label>
+                            {{ form.image }}
+                            {% if form.image.errors %}<div class="text-danger">{{ form.image.errors }}</div>{% endif %}
+                            <div class="form-text text-muted">A clear image helps in quick resolution.</div>
+                        </div>
+
+                        <div class="mb-3" style="display: none;"> {# Status is usually set by default or admin #}
+                            <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}<div class="text-danger">{{ form.status.errors }}</div>{% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Submit Issue</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-info text-white py-3">
+                    <h5 class="mb-0">💰 Earn EcoCoins by Reporting Issues!</h5>
+                </div>
+                <div class="card-body p-4">
+                    <p>Your civic contributions are rewarded! Here's how you can earn EcoCoins by posting issues:</p>
+                    <ul>
+                        <li><strong>Initial Post:</strong> While there's no direct EcoCoin reward for just posting an issue (as the primary goal is resolution), your post becomes an opportunity to earn!</li>
+                        <li><strong>Likes:</strong> When other citizens like your issue post, you earn <strong>1 EcoCoin</strong> per like!</li>
+                        <li><strong>Comments:</strong> When other citizens comment on your issue post, you earn <strong>2 EcoCoins</strong> per comment!</li>
+                        <li><strong>Resolution:</strong> Once your issue is marked as 'Resolved' by the relevant department, you might receive a bonus EcoCoin reward (feature coming soon!).</li>
+                    </ul>
+                    <p class="mb-0">The more impactful and engaging your issue posts are, the more EcoCoins you can earn. Keep an eye on your EcoCoin balance!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

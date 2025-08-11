@@ -1,67 +1,25 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model, login, authenticate, logout
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.core.mail import send_mail
+from django.http import JsonResponse
+from django.db.models import Q
 
 from cityconnect import settings
-from .forms import ReportForm
-from .models import News, Report
-from django.contrib.auth.decorators import login_required
-from .models import Task
-from .forms import TaskForm
-from django.contrib.auth import get_user_model
-from django.core.paginator import Paginator
+from .forms import TaskForm, UserRegisterForm, ContactForm, CommentForm, IssuePostForm
+from .models import News, Task, ContactMessage, IssuePost, Like, Comment, SavedPost, UserBadge
+from .utils import get_badge_info, get_user_badges # assuming utils.py contains these functions
+from store.models import Redemption # Import Redemption from the store app
 
-from django.core.mail import send_mail
-from .utils import get_badge_info 
+import logging
+logger = logging.getLogger(__name__)
 
 def home(request):
     return render(request, 'core/home.html')
 
-
-@login_required
-def report_issue(request):
-    if request.method == 'POST':
-        form = ReportForm(request.POST, request.FILES)
-        if form.is_valid():
-            report = form.save(commit=False)
-            report.user = request.user
-            report = form.save(commit=False)
-            report.location = request.user.area
-            report.save()
-
-            return redirect('my_reports')
-    else:
-        form = ReportForm()
-    return render(request, 'core/report_issue.html', {'form': form})
-
-@login_required
-def my_reports(request):
-    reports = Report.objects.filter(user=request.user).order_by('-created_at')
-
-    # Filtering
-    category = request.GET.get('category')
-    status = request.GET.get('status')
-
-    if category and category != "All":
-        reports = reports.filter(category=category)
-    if status and status != "All":
-        reports = reports.filter(status=status)
-
-    # Pagination
-    paginator = Paginator(reports, 5)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Unique values for dropdowns
-    categories = Report.objects.values_list('category', flat=True).distinct()
-    statuses = Report.STATUS_CHOICES
-
-    context = {
-        'page_obj': page_obj,
-        'categories': categories,
-        'statuses': statuses,
-        'selected_category': category,
-        'selected_status': status,
-    }
-    return render(request, 'core/my_reports.html', context)
 
 @login_required
 def tasks(request):
@@ -70,11 +28,12 @@ def tasks(request):
         if form.is_valid():
             task = form.save(commit=False)
             task.user = request.user
-            task.save()
-            user = request.user
-            user.eco_coins += 10
-            user.save() 
+            # Initial EcoCoins are awarded in the Task model's save method
+            task.save() 
+            messages.success(request, f"Task submitted! You earned {task.initial_eco_coins} EcoCoins. More to come upon admin verification!")
             return redirect('tasks')
+        else:
+            messages.error(request, "Error submitting task. Please check the form.")
     else:
         form = TaskForm()
     
@@ -82,69 +41,36 @@ def tasks(request):
     task_list = Task.objects.filter(user=request.user).order_by('-submitted_at')
     paginator = Paginator(task_list, 5)
     page_obj = paginator.get_page(request.GET.get('page'))
-    # print(page_obj)  # Debugging line to check tasks
-    # print(task_list)  # Debugging line to check tasks
-    for task in page_obj:
-        print(task)
-        print(task.get_task_type_display)  # Debugging line to check task images
 
     return render(request, 'core/tasks.html', {'form': form, 'page_obj': page_obj})
 
 
-from .models import Redemption
-
 @login_required
-def store(request):
-    STORE_ITEMS = [
-        {'name': 'Tote Bag', 'coins': 30},
-        {'name': 'Coffee Coupon', 'coins': 20},
-        {'name': 'Plant Kit', 'coins': 50},
-    ]
-    
-    if request.method == 'POST':
-        item_name = request.POST.get('item_name')
-        coins_required = int(request.POST.get('coins_required'))
-
-        if request.user.eco_coins >= coins_required:
-            Redemption.objects.create(
-                user=request.user,
-                item_name=item_name,
-                coins_spent=coins_required,
-                status='Pending'
-            )
-            request.user.eco_coins -= coins_required
-            request.user.save()
-        return redirect('store')
-
-    redemptions = Redemption.objects.filter(user=request.user).order_by('-requested_at')
-    return render(request, 'core/store.html', {
-        'items': STORE_ITEMS,
-        'redemptions': redemptions
-    })
-
-
-@login_required
-def news(request):
+def news_view(request):
     news_items = News.objects.order_by('-created_at')
     return render(request, 'core/news.html', {'news_items': news_items})
 
-from .models import Report, Task, Redemption
+def news_detail_modal(request, news_id):
+    """Returns the content for a single news item to be loaded into a modal."""
+    news_item = get_object_or_404(News, id=news_id)
+    return render(request, 'core/partials/news_detail_modal.html', {'news_item': news_item})
 
 @login_required
 def profile(request):
-    reports = Report.objects.filter(user=request.user)
-    tasks = Task.objects.filter(user=request.user)
-    redemptions = Redemption.objects.filter(user=request.user)
+    user = request.user
+    issue_posts = IssuePost.objects.filter(user=user)
+    tasks = Task.objects.filter(user=user)
+    redemptions = Redemption.objects.filter(user=user) # Fetch from store app
 
     context = {
-        'user': request.user,
-        'eco_coins': request.user.eco_coins,
-        'report_count': reports.count(),
+        'user': user,
+        'eco_coins': user.eco_coins,
+        'issue_post_count': issue_posts.count(),
         'task_count': tasks.count(),
         'redemption_count': redemptions.count(),
-        'recent_reports': reports.order_by('-created_at')[:3],
+        'recent_issue_posts': issue_posts.order_by('-created_at')[:3],
         'recent_tasks': tasks.order_by('-submitted_at')[:3],
-        'recent_redemptions': redemptions.order_by('-requested_at')[:3],
+        'recent_redemptions': redemptions.order_by('-redeemed_at')[:3], # Use redeemed_at
     }
     return render(request, 'core/profile.html', context)
 
@@ -168,11 +94,6 @@ def leaderboard(request):
     return render(request, 'core/leaderboard.html', {'top_users': top_users})
 
 
-
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.forms import AuthenticationForm
-from .forms import UserRegisterForm
-
 def user_register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
@@ -186,15 +107,16 @@ def user_register(request):
             recipient_list = [user.email]
 
             send_mail(subject, message, from_email, recipient_list, fail_silently=True)
-            print(f"Welcome email sent to {user.email}")
+            logger.info(f"Welcome email sent to {user.email}")
 
             login(request, user)
+            messages.success(request, "Registration successful! Welcome to CityConnect!")
             return redirect('home')
+        else:
+            messages.error(request, "Registration failed. Please correct the errors.")
     else:
         form = UserRegisterForm()
     return render(request, 'core/register.html', {'form': form})
-
-
 
 
 def user_login(request):
@@ -203,7 +125,10 @@ def user_login(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
+            messages.success(request, f"Welcome back, {user.username}!")
             return redirect('home')
+        else:
+            messages.error(request, "Invalid username or password.")
     else:
         form = AuthenticationForm()
     return render(request, 'core/login.html', {'form': form})
@@ -212,11 +137,9 @@ def user_login(request):
 @login_required
 def user_logout(request):
     logout(request)
+    messages.info(request, "You have been logged out.")
     return redirect('login')
 
-
-from .forms import ContactForm
-from django.contrib import messages
 
 @login_required
 def contact(request):
@@ -228,71 +151,21 @@ def contact(request):
             msg.save()
             messages.success(request, 'Message sent successfully!')
             return redirect('contact')
+        else:
+            messages.error(request, "Please correct the errors in the form.")
     else:
         form = ContactForm()
     return render(request, 'core/contact.html', {'form': form})
 
 
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponseForbidden
-
-@login_required
-def edit_report(request, report_id):
-    report = get_object_or_404(Report, id=report_id, user=request.user)
-
-    if report.status != "Pending":
-        return HttpResponseForbidden("You can only edit pending reports.")
-
-    if request.method == 'POST':
-        form = ReportForm(request.POST, request.FILES, instance=report)
-        if form.is_valid():
-            form.save()
-            return redirect('my_reports')
-    else:
-        form = ReportForm(instance=report)
-
-    return render(request, 'core/edit_report.html', {'form': form, 'report': report})
-
-
-@login_required
-def delete_report(request, report_id):
-    report = get_object_or_404(Report, id=report_id, user=request.user)
-
-    if report.status != "Pending":
-        return HttpResponseForbidden("You can only delete pending reports.")
-
-    if request.method == 'POST':
-        report.delete()
-        return redirect('my_reports')
-
-    return render(request, 'core/delete_report.html', {'report': report})
-
-
-from .models import Redemption
-from django.core.paginator import Paginator
-
-@login_required
-def redeem_history(request):
-    redemptions = Redemption.objects.filter(user=request.user).order_by('-requested_at')
-    paginator = Paginator(redemptions, 5)
-    page_obj = paginator.get_page(request.GET.get('page'))
-
-    return render(request, 'core/redeem_history.html', {'page_obj': page_obj})
-
-
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from .models import Report, Task, Redemption
-from .utils import get_badge_info, get_user_badges  # assuming utils.py contains these functions
-from .models import UserBadge
 @login_required
 def dashboard(request):
     user = request.user
 
-    # Reports
-    reports = Report.objects.filter(user=user)
-    total_reports = reports.count()
-    recent_reports = reports.order_by('-created_at')[:5]
+    # Issue Posts
+    issue_posts = IssuePost.objects.filter(user=user)
+    total_issue_posts = issue_posts.count()
+    recent_issue_posts = issue_posts.order_by('-created_at')[:5]
 
     # Tasks
     tasks = Task.objects.filter(user=user)
@@ -304,12 +177,13 @@ def dashboard(request):
     total_coins = user.eco_coins
     badge_name, badge_color, badge_emoji = get_badge_info(total_coins)
 
-    # Redemption (optional)
-    pending_redemptions = Redemption.objects.filter(user=user, status='pending').count() if Redemption in globals() else 0
+    # Redemption (from store app)
+    pending_redemptions = Redemption.objects.filter(user=user, status='pending').count()
 
     # Achievement Badges
     achievement_badges = get_user_badges(user)
-        # Badge notifications
+    
+    # Badge notifications
     new_badges = UserBadge.objects.filter(user=user).order_by('-unlocked_at')[:5]
     if not request.session.get('notified_badges'):
         request.session['notified_badges'] = [b.badge_name for b in new_badges]
@@ -321,12 +195,12 @@ def dashboard(request):
         request.session['notified_badges'] += [b.badge_name for b in notify_badges]
 
     context = {
-        'total_reports': total_reports,
+        'total_issue_posts': total_issue_posts, # Renamed from total_reports
         'total_tasks': total_tasks,
         'total_coins': total_coins,
         'pending_tasks': pending_tasks,
         'pending_redemptions': pending_redemptions,
-        'recent_reports': recent_reports,
+        'recent_issue_posts': recent_issue_posts, # Renamed from recent_reports
         'recent_tasks': recent_tasks,
 
         # Coin-based badge
@@ -341,32 +215,14 @@ def dashboard(request):
     return render(request, 'core/dashboard.html', context)
 
 
-@login_required
-def area_issues(request):
-    user_area = request.user.area
-    public_reports = Report.objects.filter(location=user_area).exclude(user=request.user).order_by('-created_at')
-
-    paginator = Paginator(public_reports, 5)
-    page_obj = paginator.get_page(request.GET.get('page'))
-
-    return render(request, 'core/area_issues.html', {
-        'page_obj': page_obj,
-        'user_area': user_area
-    })
-
-
 def verify_task(request, task_id):
+    # This view is likely for admin panel or internal use, keeping it as is.
     task = get_object_or_404(Task, id=task_id)
     task.is_verified = True
     task.award_eco_coins()
     messages.success(request, f"{task.eco_coins_awarded} EcoCoins awarded!")
-    return redirect('admin_task_list')
+    return redirect('admin_task_list') # Assuming an admin URL for tasks
 
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .forms import IssuePostForm
-from .models import IssuePost
 
 @login_required
 def create_issue_post(request):
@@ -376,110 +232,34 @@ def create_issue_post(request):
             issue = form.save(commit=False)
             issue.user = request.user
             issue.save()
-            return redirect('feed')  # We'll create 'feed' in the next step
+            messages.success(request, "Issue post created successfully! You can earn more EcoCoins when others like or comment on your post.")
+            return redirect('feed')
+        else:
+            messages.error(request, "Error creating issue post. Please check your input.")
     else:
         form = IssuePostForm()
 
     return render(request, 'core/create_issue_post.html', {'form': form})
 
 
-# from .models import IssuePost
-
-# @login_required
-# def feed(request):
-#     area_filter = request.GET.get('area')
-    
-#     if area_filter:
-#         posts = IssuePost.objects.filter(area__iexact=area_filter).select_related('user').prefetch_related('likes', 'comments')
-#     else:
-#         posts = IssuePost.objects.all().select_related('user').prefetch_related('likes', 'comments')
-
-#     # optional: show unique areas for dropdown filter
-#     areas = IssuePost.objects.values_list('area', flat=True).distinct()
-
-#     return render(request, 'core/feed.html', {
-#         'posts': posts,
-#         'area_filter': area_filter,
-#         'areas': areas,
-#     })
-
-
-# from django.shortcuts import get_object_or_404
-
-# from .forms import CommentForm
-
-# @login_required
-# def post_detail(request, pk):
-#     post = get_object_or_404(IssuePost, id=pk)
-#     comments = post.comments.select_related('user').order_by('-timestamp')
-
-#     if request.method == 'POST':
-#         form = CommentForm(request.POST)
-#         if form.is_valid():
-#             new_comment = form.save(commit=False)
-#             new_comment.user = request.user
-#             new_comment.post = post
-#             new_comment.save()
-#             return redirect('post_detail', pk=post.pk)
-#     else:
-#         form = CommentForm()
-
-#     return render(request, 'core/post_detail.html', {
-#         'post': post,
-#         'comments': comments,
-#         'form': form,
-#     })
-
-
-
-# from django.http import HttpResponseRedirect
-# from django.urls import reverse
-# from .models import Like, IssuePost
-
-# @login_required
-# def toggle_like(request, pk):
-#     post = get_object_or_404(IssuePost, id=pk)
-#     like, created = Like.objects.get_or_create(user=request.user, post=post)
-
-#     if not created:
-#         # Already liked → unlike
-#         like.delete()
-#         post.likes_count = post.likes.count()
-#     else:
-#         # New like
-#         post.likes_count = post.likes.count()
-
-#         # Optional: Award coins for 10+ likes
-#         if post.likes_count == 10:
-#             post.user.eco_coins += 5
-#             post.user.save()
-
-#     post.save()
-#     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/feed/'))
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.db.models import Count, Q
-from django.core.paginator import Paginator
-from .models import IssuePost, Like, Comment
-from .forms import CommentForm
-
 @login_required
 def feed(request):
     area_filter = request.GET.get('area')
     status_filter = request.GET.get('status')
+    department_filter = request.GET.get('department') # New filter
     search_query = request.GET.get('q')
     
-    # Base queryset
     posts = IssuePost.objects.select_related('user')\
                            .prefetch_related('likes', 'comments')
     
-    # Apply filters
     if area_filter:
         posts = posts.filter(area__iexact=area_filter)
     
     if status_filter:
         posts = posts.filter(status=status_filter)
+
+    if department_filter: # Apply new department filter
+        posts = posts.filter(department=department_filter)
     
     if search_query:
         posts = posts.filter(
@@ -488,11 +268,10 @@ def feed(request):
             Q(location_details__icontains=search_query)
         )
     
-    # Get distinct areas for filter dropdown
     areas = IssuePost.objects.values_list('area', flat=True).distinct()
+    departments = IssuePost.DEPARTMENT_CHOICES # Get department choices for filter
     
-    # Pagination
-    paginator = Paginator(posts, 10)  # Show 10 posts per page
+    paginator = Paginator(posts, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     saved_posts = SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True)
@@ -502,22 +281,18 @@ def feed(request):
         'saved_posts': saved_posts,
         'area_filter': area_filter,
         'status_filter': status_filter,
+        'department_filter': department_filter, # Pass to template
         'search_query': search_query,
         'areas': areas,
         'status_choices': IssuePost.STATUS_CHOICES,
+        'department_choices': departments, # Pass to template
     }
     
     return render(request, 'core/feed.html', context)
 
-
 @login_required
 def toggle_like(request, post_id):
-    print(f"Like toggle initiated by user {request.user.id} for post {post_id}")
     post = get_object_or_404(IssuePost, id=post_id)
-    
-    # Debug current like state
-    # current_state = post.is_liked_by(request.user)
-    # print(f"Current like state before toggle: {current_state}")
     
     like, created = Like.objects.get_or_create(
         user=request.user,
@@ -526,13 +301,15 @@ def toggle_like(request, post_id):
     
     if not created:
         like.delete()
-        print("Like removed")
+        messages.info(request, "Like removed.")
     else:
-        print("Like added")
+        messages.success(request, "Post liked!")
     
+    # Re-render the post card to update like count/icon
     context = {
         'post': post,
-        'request': request
+        'request': request,
+        'saved_posts': SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True) # Needed for post_card
     }
     return render(request, 'core/partials/post_card.html', context)
 
@@ -552,7 +329,10 @@ def post_detail(request, post_id):
             comment.user = request.user
             comment.post = post
             comment.save()
+            messages.success(request, "Comment added!")
             return redirect('post_detail', post_id=post.id)
+        else:
+            messages.error(request, "Error adding comment.")
     else:
         form = CommentForm()
     comments = post.comments.select_related('user').order_by('-timestamp')
@@ -575,12 +355,16 @@ def update_post_status(request, post_id):
         if new_status in dict(IssuePost.STATUS_CHOICES).keys():
             post.status = new_status
             post.save()
-            
+            messages.success(request, f"Post status updated to {post.get_status_display()}.")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'status': 'success',
                     'new_status': post.get_status_display()
                 })
+        else:
+            messages.error(request, "Invalid status provided.")
+    else:
+        messages.error(request, "You are not authorized to perform this action.")
     
     return redirect('post_detail', post_id=post_id)
 
@@ -597,7 +381,7 @@ def post_comments(request, post_id):
             comment.user = request.user
             comment.post = post
             comment.save()
-            
+            messages.success(request, "Comment added!")
             if request.headers.get('HX-Request'):
                 # Return the updated comments list for HTMX
                 comments = post.comments.select_related('user').order_by('-timestamp')
@@ -606,6 +390,8 @@ def post_comments(request, post_id):
                     'post': post
                 })
             return redirect('feed')
+        else:
+            messages.error(request, "Error adding comment.")
     
     # GET request - return all comments
     comments = post.comments.select_related('user').order_by('-timestamp')
@@ -624,10 +410,6 @@ def comment_form(request, post_id):
         'post': post
     })
 
-from django.shortcuts import redirect, get_object_or_404
-from .models import IssuePost, SavedPost
-from django.contrib.auth.decorators import login_required
-
 
 @login_required
 def toggle_save_post(request, post_id):
@@ -636,10 +418,12 @@ def toggle_save_post(request, post_id):
 
     if not created:
         saved.delete()
+        messages.info(request, "Post unsaved.")
+    else:
+        messages.success(request, "Post saved!")
 
     # Get updated saved posts list after toggle
     saved_posts = SavedPost.objects.filter(user=request.user).values_list('post_id', flat=True)
-
 
     context = {
         'post': post,
@@ -658,5 +442,8 @@ def saved_posts_view(request):
         .select_related('user')               # optimize FK to user
         .prefetch_related('likes', 'comments') # optimize related sets
     )
-    return render(request, 'core/saved_posts.html', {'saved_posts': posts})
-
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'core/saved_posts.html', {'saved_posts': page_obj})

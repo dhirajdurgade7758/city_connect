@@ -1,105 +1,64 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Redemption Voucher{% endblock %}
-
-{% block extra_css %}
-<link href="{% static 'css/voucher.css' %}" rel="stylesheet">
-{% endblock %}
+{% block title %}Voucher - {{ redemption.offer.name }}{% endblock %}
 
 {% block content %}
-<div class="voucher-container">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="voucher-card">
-                     Voucher Header 
-                    <div class="voucher-header">
-                        <div class="voucher-logo">
-                            <i class="fas fa-certificate"></i>
-                        </div>
-                        <h2 class="voucher-title">Redemption Voucher</h2>
-                        <p class="voucher-subtitle">EcoCoin Store</p>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h3><i class="fas fa-certificate"></i> Redemption Voucher</h3>
+                    <p class="mb-0">EcoCoin Store</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h4 class="text-success">{{ redemption.offer.name }}</h4>
+                        <p class="text-muted">{{ redemption.offer.description }}</p>
                     </div>
-
-                     Voucher Content 
-                    <div class="voucher-content">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="offer-details">
-                                    <h3 class="offer-name">{{ redemption.offer.name }}</h3>
-                                    <p class="offer-description">{{ redemption.offer.description }}</p>
-                                    
-                                    <div class="voucher-info">
-                                        <div class="info-item">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <div>
-                                                <strong>Location:</strong>
-                                                <span>{{ redemption.offer.location_name }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="info-item">
-                                            <i class="fas fa-coins"></i>
-                                            <div>
-                                                <strong>Coins Spent:</strong>
-                                                <span>{{ redemption.coins_spent }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="info-item">
-                                            <i class="fas fa-calendar"></i>
-                                            <div>
-                                                <strong>Redeemed On:</strong>
-                                                <span>{{ redemption.redeemed_at|date:"M d, Y H:i" }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="info-item">
-                                            <i class="fas fa-ticket-alt"></i>
-                                            <div>
-                                                <strong>Voucher Code:</strong>
-                                                <span class="voucher-code">{{ redemption.voucher_code }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 text-center">
+                                <i class="fas fa-ticket-alt text-primary fa-2x mb-2"></i>
+                                <h5>Voucher Code</h5>
+                                <h3 class="text-primary">{{ redemption.voucher_code }}</h3>
                             </div>
-                            
-                            <div class="col-md-4">
-                                <div class="qr-section">
-                                    <div class="qr-code">
-                                        <i class="fas fa-qrcode"></i>
-                                    </div>
-                                    <p class="qr-text">Scan to verify</p>
-                                </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3">
+                                <h6><i class="fas fa-info-circle text-info"></i> Details</h6>
+                                <p class="mb-1"><strong>Location:</strong> {{ redemption.offer.location_name }}</p>
+                                <p class="mb-1"><strong>Coins Spent:</strong> {{ redemption.coins_spent }}</p>
+                                <p class="mb-1"><strong>Redeemed:</strong> {{ redemption.redeemed_at|date:"M d, Y H:i" }}</p>
+                                <p class="mb-0"><strong>Valid Until:</strong> {{ redemption.offer.end_date }}</p>
                             </div>
                         </div>
                     </div>
-
-                     Voucher Footer 
-                    <div class="voucher-footer">
-                        <div class="terms">
-                            <h5>Terms & Conditions:</h5>
-                            <ul>
-                                <li>This voucher is valid for one-time use only</li>
-                                <li>Present this voucher at the specified location</li>
-                                <li>Valid until {{ redemption.offer.end_date }}</li>
-                                <li>Cannot be exchanged for cash</li>
-                            </ul>
+                    
+                    {% if redemption.offer.location_map_url %}
+                        <div class="text-center mb-4">
+                            <a href="{{ redemption.offer.location_map_url }}" target="_blank" class="btn btn-outline-primary">
+                                <i class="fas fa-map-marker-alt"></i> View Location on Map
+                            </a>
                         </div>
-                        
-                        {% if redemption.offer.location_map_url %}
-                            <div class="map-link">
-                                <a href="{{ redemption.offer.location_map_url }}" target="_blank" class="btn btn-outline-primary">
-                                    <i class="fas fa-map"></i> View Location
-                                </a>
-                            </div>
-                        {% endif %}
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-exclamation-circle"></i> Important Instructions:</h6>
+                        <ul class="mb-0">
+                            <li>Present this voucher code at the specified location</li>
+                            <li>This voucher is valid for one-time use only</li>
+                            <li>Valid only until the expiration date mentioned above</li>
+                            <li>Cannot be exchanged for cash or other offers</li>
+                        </ul>
                     </div>
-
-                     Action Buttons 
-                    <div class="voucher-actions">
+                </div>
+                
+                <div class="card-footer text-center">
+                    <div class="btn-group" role="group">
                         <a href="{% url 'download_voucher_pdf' redemption.id %}" class="btn btn-success">
                             <i class="fas fa-download"></i> Download PDF
                         </a>
@@ -109,10 +68,25 @@
                         <a href="{% url 'store_view' %}" class="btn btn-secondary">
                             <i class="fas fa-store"></i> Back to Store
                         </a>
+                        <a href="{% url 'redemption_history' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-history"></i> My Redemptions
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+@media print {
+    .btn-group, .card-footer, nav, .navbar {
+        display: none !important;
+    }
+    .card {
+        border: 2px solid #28a745 !important;
+        box-shadow: none !important;
+    }
+}
+</style>
 {% endblock %}
