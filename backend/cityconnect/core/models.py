@@ -123,11 +123,7 @@ class IssuePost(models.Model):
         ('public_works', 'Public Works Department'),
         ('water_supply', 'Water Supply Department'),
         ('waste_management', 'Waste Management Department'),
-        ('electricity', 'Electricity Department'),
-        ('health_sanitation', 'Health & Sanitation Department'),
-        ('traffic_transport', 'Traffic & Transport Department'),
-        ('parks_recreation', 'Parks & Recreation Department'),
-        ('other', 'Other'),
+        ('electricity', 'Electricity Department')
     ]
 
     id = models.AutoField(primary_key=True, editable=True)
