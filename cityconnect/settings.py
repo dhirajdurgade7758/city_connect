@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url  # Add this import at the top
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,9 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-r2tm1s94dal&j5qxfi30ngptav_$h0)1)zn)kv%sk)uz935%0i'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ['192.168.202.110', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.onrender.com',  # Allow all subdomains from Render
+]
 
 
 # Application definition
@@ -82,10 +87,9 @@ WSGI_APPLICATION = 'cityconnect.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.getenv("DATABASE_URL")
+    )
 }
 
 
@@ -123,7 +127,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # For collectstatic on Render
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 
@@ -148,6 +153,6 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 HF_API_KEY = os.getenv("HF_API_KEY")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
