@@ -1,6 +1,7 @@
-from .models import UserBadge, IssuePost
+from .models import UserBadge
 from core import models 
 from django.db.models import Count
+from issues.models import IssuePost
 
 
 def unlock_badge(user, badge_name, badge_type):
