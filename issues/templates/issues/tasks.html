@@ -1,0 +1,202 @@
+{% extends 'core/base.html' %}
+{% block title %}Civic Tasks{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4 text-center">Do Civic Tasks & Earn EcoCoins! 🌳💰</h3>
+    <p class="lead text-center mb-5">Contribute to your community and get rewarded for your efforts. Every task helps make our city greener and cleaner!</p>
+
+    <div class="row mb-5">
+        <div class="col-md-6 offset-md-3">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white text-center py-3">
+                    <h4 class="mb-0">Submit a New Task</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" id="taskSubmissionForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label fw-bold">Task Title <span class="text-danger">*</span></label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small mt-1">{{ form.title.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">{{ form.title.help_text }}</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">Description <span class="text-danger">*</span></label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">{{ form.description.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">{{ form.description.help_text }}</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.task_type.id_for_label }}" class="form-label fw-bold">Task Type <span class="text-danger">*</span></label>
+                            {{ form.task_type }}
+                            {% if form.task_type.errors %}
+                                <div class="text-danger small mt-1">{{ form.task_type.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div id="ecoCoinInfo" class="alert alert-info mt-3 d-none" role="alert">
+                            <strong>EcoCoin Rewards:</strong><br>
+                            Initial: <span id="initialCoins">0</span> EcoCoins (awarded on submission)<br>
+                            Verified: <span id="verifiedCoins">0</span> EcoCoins (additional, upon admin verification)
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.proof_image.id_for_label }}" class="form-label fw-bold">Proof Image</label>
+                            {{ form.proof_image }}
+                            {% if form.proof_image.errors %}
+                                <div class="text-danger small mt-1">{{ form.proof_image.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Upload an image as proof of your completed task (e.g., before/after, event photo).</small>
+                            <div class="mt-2 text-center">
+                                <img id="imagePreview" src="#" alt="Image Preview" class="img-fluid rounded shadow-sm" style="max-height: 200px; display: none; border: 1px solid #ddd;">
+                            </div>
+                        </div>
+                        {{ form.reported_latitude }}
+                        {{ form.reported_longitude }}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Submit Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light py-3">
+                    <h4 class="mb-0">How EcoCoins Work</h4>
+                </div>
+                <div class="card-body">
+                    <p>When you submit a task, you'll receive an **initial amount of EcoCoins** immediately. This acknowledges your effort and contribution.</p>
+                    <p>Our administrators will then review your submission. Once your task is **verified**, you'll receive **additional EcoCoins** as a bonus for your impactful work!</p>
+                    <p>You can track your total EcoCoins and task status below.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="mb-4 text-center">My Submitted Tasks</h4>
+    {% if page_obj %}
+        <div class="row">
+            {% for task in page_obj %}
+                {% include 'issues/partials/_task_card.html' %}
+            {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-warning text-center" role="alert">
+                        <i class="fas fa-info-circle me-2"></i> No tasks submitted yet. Start contributing today!
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4">
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    {% else %}
+        <div class="alert alert-warning text-center" role="alert">
+            <i class="fas fa-info-circle me-2"></i> No tasks submitted yet. Start contributing today!
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const taskTypeSelect = document.getElementById('id_task_type');
+        const initialCoinsSpan = document.getElementById('initialCoins');
+        const verifiedCoinsSpan = document.getElementById('verifiedCoins');
+        const ecoCoinInfoDiv = document.getElementById('ecoCoinInfo');
+        const proofImageInput = document.getElementById('id_proof_image');
+        const imagePreview = document.getElementById('imagePreview');
+
+        const ecoCoinRewards = {
+            'plastic_bottles': {initial: 15, verified: 35},
+            'public_awareness': {initial: 10, verified: 40},
+            'tree_planting': {initial: 20, verified: 30},
+            'community_cleanup': {initial: 25, verified: 25},
+            'e_waste_collection': {initial: 30, verified: 20},
+            'water_conservation': {initial: 20, verified: 30},
+            'energy_saving': {initial: 18, verified: 32},
+            'composting': {initial: 22, verified: 28},
+            'other': {initial: 5, verified: 15}
+        };
+
+        function updateEcoCoinDisplay() {
+            const selectedType = taskTypeSelect.value;
+            if (selectedType && ecoCoinRewards[selectedType]) {
+                const rewards = ecoCoinRewards[selectedType];
+                initialCoinsSpan.textContent = rewards.initial;
+                verifiedCoinsSpan.textContent = rewards.verified;
+                ecoCoinInfoDiv.classList.remove('d-none');
+            } else {
+                ecoCoinInfoDiv.classList.add('d-none');
+            }
+        }
+
+        function previewImage() {
+            const file = proofImageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.src = '#';
+                imagePreview.style.display = 'none';
+            }
+        }
+
+        // Event Listeners
+        taskTypeSelect.addEventListener('change', updateEcoCoinDisplay);
+        proofImageInput.addEventListener('change', previewImage);
+
+        // Initial call to set up display if a default value is selected
+        updateEcoCoinDisplay();
+    });
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                document.getElementById("id_reported_latitude").value = position.coords.latitude;
+                document.getElementById("id_reported_longitude").value = position.coords.longitude;
+            },
+            function (error) {
+                console.warn("Geolocation error:", error.message);
+            }
+        );
+    } else {
+        console.warn("Geolocation is not supported by this browser.");
+    }
+});
+</script>
+{% endblock %}
