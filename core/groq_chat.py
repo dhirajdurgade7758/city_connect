@@ -19,7 +19,7 @@ def ask_gemini(user_message: str):
         return "⚠️ Gemini API key not configured."
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         # Combine system prompt + user input
         system_prompt = (

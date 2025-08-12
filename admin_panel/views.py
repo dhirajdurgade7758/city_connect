@@ -13,6 +13,9 @@ from django.contrib import messages
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
+import googlemaps
+from django.conf import settings
+
 User = get_user_model()
 
 class DepartmentAdminLoginView(LoginView):
@@ -86,3 +89,29 @@ from django.contrib.auth import logout
 def admin_logout(request):
     logout(request)
     return redirect('admin_panel:admin_login')
+
+
+class MapView(View): 
+    template_name = "admin_panel/map.html"
+
+    def get(self,request): 
+        key = settings.GOOGLE_API_KEY
+        issues = IssuePost.objects.filter(reported_latitude__isnull=False, location_name__isnull=False)
+        locations = []
+
+        for a in issues:
+            data = {
+                'lat': float(a.reported_latitude), 
+                'lng': float(a.reported_longitude), 
+                'name': a.location_name,
+                'image':a.image.url,
+                'description': a.description,
+            }
+            locations.append(data)
+        print(locations)
+        context = {
+            "key":key, 
+            "locations": locations
+        }
+
+        return render(request, self.template_name, context)

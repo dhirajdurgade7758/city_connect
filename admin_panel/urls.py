@@ -9,4 +9,5 @@ urlpatterns = [
 
     path('<str:department>/', views.department_dashboard, name='department_dashboard'),
     path('<str:department>/issue/<int:issue_id>/', views.issue_detail, name='issue_detail'),
+    path("map", views.MapView.as_view(), name='my_map_view'), 
 ]
