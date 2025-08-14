@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-r2tm1s94dal&j5qxfi30ngptav_$h0)1)zn)kv%sk)uz935%0i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.70.65.242', '127.0.0.1']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -40,9 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',  # Your core app
     'store',  # Your store app
-    'issues',  # Your issues app
-    'admin_panel', 
-    'django_extensions'
     
 ]
 
@@ -147,8 +144,3 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
-
-# OPENAI_API_KEY = "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"
-OPENAI_API_KEY = ""
-HF_API_KEY = os.getenv("HF_API_KEY")
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")

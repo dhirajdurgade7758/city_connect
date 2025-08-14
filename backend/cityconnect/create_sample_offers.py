@@ -1,63 +1,140 @@
 import os
 import django
+from datetime import date, timedelta
 
-# 1. Set up Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cityconnect.settings')  # replace with your project name
+# Set up Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cityconnect.settings')
 django.setup()
 
-from core.models import IssuePost
+from django.contrib.auth import get_user_model
+from store.models import StoreOffer
 
-# Map of title -> new description (3+ lines each)
-updated_descriptions = {
-    "Potholes on Main Street": """Large potholes have appeared after heavy rains. 
-They are causing traffic jams and damaging vehicles. 
-If left unattended, these potholes may expand further and pose a risk to pedestrians as well.""",
+User = get_user_model()
 
-    "Low Water Pressure in Sector 4": """Residents are experiencing very low water pressure since last week. 
-Daily chores such as cooking and cleaning have become difficult. 
-The issue seems to be worsening, affecting even early morning supply hours.""",
+def create_sample_offers():
+    print("Creating sample store offers...")
 
-    "Garbage Collection Delays": """Garbage has not been collected for over a week. 
-The smell is unbearable and is attracting stray dogs and rodents. 
-Nearby shop owners have also complained about reduced footfall due to the foul environment.""",
-
-    "Street Light Not Working": """Street light on main road has been out for 10 days. 
-The area is dark and unsafe for pedestrians, especially late at night. 
-Local businesses say customers are avoiding the area after sunset.""",
-
-    "Broken Footpath Tiles": """Several tiles on the footpath are broken or missing. 
-Elderly citizens and children are finding it hard to walk safely. 
-A few minor accidents have already been reported by residents.""",
-
-    "Water Leakage on Main Road": """A major pipeline burst has caused water to flood the road. 
-Traffic is being diverted, leading to long delays during peak hours. 
-The constant water flow is also damaging the road surface and nearby shop entrances.""",
-
-    "Overflowing Dustbin": """Public dustbin is overflowing with trash and has not been emptied in days. 
-Passersby are forced to throw waste on the street, creating a mess. 
-The area now attracts flies and has a strong foul odor throughout the day.""",
-
-    "Power Fluctuations at Night": """Frequent voltage fluctuations occur every evening. 
-Electronics are at risk of damage and several households have reported appliance failures. 
-The fluctuations also cause frequent tripping of power supply in some houses.""",
-
-    "Cracked Road Divider": """Road divider has cracks and loose stones that can come loose. 
-This poses a danger to two-wheeler riders and cars alike. 
-Heavy vehicles hitting the divider could worsen the damage quickly.""",
-
-    "Contaminated Water Supply": """Tap water smells bad and looks muddy. 
-Many residents are reporting stomach issues and fear a waterborne disease outbreak. 
-The contamination appears to be constant and affects multiple blocks in the area."""
-}
-
-# Update descriptions
-for title, new_desc in updated_descriptions.items():
+    # Get or create a user to be the 'added_by' for offers
     try:
-        issue = IssuePost.objects.get(title=title)
-        issue.description = new_desc
-        issue.save(update_fields=['description'])
-        print(f"✅ Updated: {title}")
-    except IssuePost.DoesNotExist:
-        print(f"⚠️ Not found: {title}")
+        admin_user = User.objects.get(username='admin')
+    except User.DoesNotExist:
+        admin_user = User.objects.create_user(username='admin', email='admin@example.com', password='adminpassword', role='admin')
+        print("Created a new admin user: admin")
 
-print("🎯 All descriptions updated successfully.")
+    today = date.today()
+
+    offers_to_create = [
+        {
+            'name': 'Local Cafe Discount',
+            'description': 'Get 20% off your next coffee at City Brew Cafe!',
+            'coins_required': 50,
+            'offer_type': 'shop_offer',
+            'location_name': '123 Main St, Cityville',
+            'location_map_url': 'https://maps.google.com/?q=City+Brew+Cafe',
+            'stock': 100,
+            'start_date': today - timedelta(days=7),
+            'end_date': today + timedelta(days=30),
+            'is_active': True,
+            'added_by': admin_user,
+        },
+        {
+            'name': 'Community Garden Seed Pack',
+            'description': 'Redeem for a free pack of organic vegetable seeds for your garden.',
+            'coins_required': 30,
+            'offer_type': 'eco_reward',
+            'location_name': 'City Community Garden',
+            'location_map_url': 'https://maps.google.com/?q=Community+Garden',
+            'stock': 50,
+            'start_date': today - timedelta(days=10),
+            'end_date': today + timedelta(days=60),
+            'is_active': True,
+            'added_by': admin_user,
+        },
+        {
+            'name': 'Charity Donation Match',
+            'description': 'We will match your EcoCoin donation to the local animal shelter.',
+            'coins_required': 100,
+            'offer_type': 'donor_gift',
+            'location_name': 'Online / City Animal Shelter',
+            'location_map_url': '',
+            'stock': 20,
+            'start_date': today - timedelta(days=5),
+            'end_date': today + timedelta(days=45),
+            'is_active': True,
+            'added_by': admin_user,
+        },
+        {
+            'name': 'Local Music Festival Ticket',
+            'description': 'One free ticket to the annual City Sounds Music Festival!',
+            'coins_required': 200,
+            'offer_type': 'event_ticket',
+            'location_name': 'City Park Amphitheater',
+            'location_map_url': 'https://maps.google.com/?q=City+Park+Amphitheater',
+            'stock': 10,
+            'start_date': today + timedelta(days=15),
+            'end_date': today + timedelta(days=20),
+            'is_active': True,
+            'added_by': admin_user,
+        },
+        {
+            'name': 'Expired Offer Example',
+            'description': 'This offer is no longer valid.',
+            'coins_required': 10,
+            'offer_type': 'shop_offer',
+            'location_name': 'Old Shop',
+            'location_map_url': '',
+            'stock': 5,
+            'start_date': today - timedelta(days=30),
+            'end_date': today - timedelta(days=1), # Expired yesterday
+            'is_active': True,
+            'added_by': admin_user,
+        },
+        {
+            'name': 'Out of Stock Item',
+            'description': 'A popular item that ran out.',
+            'coins_required': 75,
+            'offer_type': 'eco_reward',
+            'location_name': 'Eco Center',
+            'location_map_url': '',
+            'stock': 0, # Out of stock
+            'start_date': today - timedelta(days=10),
+            'end_date': today + timedelta(days=30),
+            'is_active': True,
+            'added_by': admin_user,
+        },
+        {
+            'name': 'Future Event Ticket',
+            'description': 'Ticket for an event next month.',
+            'coins_required': 150,
+            'offer_type': 'event_ticket',
+            'location_name': 'Community Hall',
+            'location_map_url': '',
+            'stock': 20,
+            'start_date': today + timedelta(days=30), # Starts in the future
+            'end_date': today + timedelta(days=35),
+            'is_active': True,
+            'added_by': admin_user,
+        },
+    ]
+
+    for offer_data in offers_to_create:
+        # Remove 'added_by' from data for create, then assign
+        added_by_user = offer_data.pop('added_by')
+        offer, created = StoreOffer.objects.get_or_create(
+            name=offer_data['name'],
+            defaults={**offer_data, 'added_by': added_by_user}
+        )
+        if created:
+            print(f"Created offer: {offer.name}")
+        else:
+            print(f"Offer already exists: {offer.name}")
+            # Update existing offer if needed
+            for key, value in offer_data.items():
+                setattr(offer, key, value)
+            offer.added_by = added_by_user # Ensure added_by is set
+            offer.save()
+
+    print("Sample offers creation complete.")
+
+if __name__ == '__main__':
+    create_sample_offers()

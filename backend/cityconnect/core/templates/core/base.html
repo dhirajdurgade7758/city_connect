@@ -213,6 +213,7 @@
           {% endif %}
         </a>
       </li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'contact' %}">Help</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'create_issue_post' %}">Report</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'tasks' %}">Tasks</a></li>
       <li class="nav-item"><a class="nav-link" href="{% url 'store_view' %}">Store</a></li>
@@ -348,7 +349,5 @@
     });
   });
 </script>
-{% block extra_js %}{% endblock extra_js %}
-
 </body>
 </html>

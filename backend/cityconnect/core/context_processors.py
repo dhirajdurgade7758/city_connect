@@ -1,4 +1,4 @@
-from issues.models import Task
+from .models import Task
 
 def notification_counts(request):
     if request.user.is_authenticated:
