@@ -312,6 +312,10 @@ def saved_posts_view(request):
     page_obj = paginator.get_page(page_number)
     
     return render(request, 'issues/saved_posts.html', {'saved_posts': page_obj})
+def proof_image_upload_path(instance, filename):
+    filename = filename.replace(" ", "_")  # replace spaces with underscore
+    return f'tasks/{filename}'
+
 @login_required
 def tasks(request):
     if request.method == 'POST':
@@ -319,8 +323,10 @@ def tasks(request):
         if form.is_valid():
             task = form.save(commit=False)
             task.user = request.user
+            task.save()
             task.reported_latitude = form.cleaned_data.get("reported_latitude")
             task.reported_longitude = form.cleaned_data.get("reported_longitude")
+            task.save()
             task.save()
 
             title = (form.cleaned_data.get("title") or "").strip()
@@ -330,7 +336,7 @@ def tasks(request):
 
             try:
                 if getattr(settings, "OPENAI_API_KEY", None):
-                    verification_result = verify_issue_image_openai(task.proof_image.path, text_query)
+                    verification_result = verify_task_image_openai(task.proof_image.path, text_query)
                 elif getattr(settings, "HF_API_KEY", None):
                     verification_result = verify_issue_image_huggingface(task.proof_image.path, text_query=text_query)
             except Exception as e:
@@ -363,4 +369,3 @@ def tasks(request):
     page_obj = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'issues/tasks.html', {'form': form, 'page_obj': page_obj})
-

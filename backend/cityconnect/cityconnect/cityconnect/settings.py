@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-r2tm1s94dal&j5qxfi30ngptav_$h0)1)zn)kv%sk)uz935%0i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.70.65.242', '127.0.0.1']
+ALLOWED_HOSTS = ['192.168.202.110', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -148,7 +148,6 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
-# OPENAI_API_KEY = "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"
-OPENAI_API_KEY = ""
+OPENAI_API_KEY = "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"
 HF_API_KEY = os.getenv("HF_API_KEY")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
