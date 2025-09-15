@@ -12,10 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -137,8 +134,9 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 
+
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Email backend for development
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv("EMAIL_HOST")
@@ -148,6 +146,7 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
-OPENAI_API_KEY = "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"
+GEMINI_API_KEY = 'AIzaSyAKchES2eJelGCnJKtu_Bg1TP5o7sJoowY'
+# OPENAI_API_KEY = "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"
 HF_API_KEY = os.getenv("HF_API_KEY")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")

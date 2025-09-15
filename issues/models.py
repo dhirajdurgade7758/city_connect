@@ -3,6 +3,11 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from core.models import User
+from django.utils.text import slugify
+
+def task_image_upload_path(instance, filename):
+    base, ext = os.path.splitext(filename)
+    return f"tasks/{slugify(base)}{ext}"
 
 class Task(models.Model):
     TASK_TYPE_CHOICES = [
@@ -15,7 +20,7 @@ class Task(models.Model):
     title = models.CharField(max_length=100, help_text="A short, descriptive title for your task.")
     description = models.TextField(help_text="Provide details about the task you completed, including location and impact.")
     task_type = models.CharField(max_length=50, choices=TASK_TYPE_CHOICES)
-    proof_image = models.ImageField(upload_to='tasks/', null=True, blank=True)
+    proof_image = models.ImageField(upload_to=task_image_upload_path, null=True, blank=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
     admin_feedback = models.TextField(blank=True, null=True) 
 
@@ -31,7 +36,11 @@ class Task(models.Model):
     verification_details = models.TextField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        self.user.eco_coins += self.eco_coins_awarded
+    # update user's eco_coins before saving
+        if self.eco_coins_awarded:
+            self.user.eco_coins += self.eco_coins_awarded
+            self.user.save()
+        super().save(*args, **kwargs)  # actually save the Task!
     def __str__(self):
         return f"{self.user.username} - {self.get_task_type_display()}"
 

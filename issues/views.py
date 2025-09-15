@@ -10,7 +10,7 @@ from django.db.models import Q
 import requests
 
 from cityconnect import settings
-from issues.services import verify_issue_image_huggingface, verify_issue_image_openai, verify_task_image_openai
+from issues.services import *
 from .forms import TaskForm, CommentForm, IssuePostForm
 from .models import Task, IssuePost, Like, Comment, SavedPost
 
@@ -82,8 +82,8 @@ def create_issue_post(request):
             # AI verification
             verification_result = {"error": "No verifier configured"}
             try:
-                if getattr(settings, "OPENAI_API_KEY", None):
-                    verification_result = verify_issue_image_openai(issue.image.path, prompt=text_query)
+                if getattr(settings, "GEMINI_API_KEY", None):
+                    verification_result = verify_issue_image_gemini(issue.image.path, prompt=text_query)
                 elif getattr(settings, "HF_API_KEY", None):
                     verification_result = verify_issue_image_huggingface(issue.image.path, text_query=text_query)
             except Exception as e:
@@ -92,7 +92,7 @@ def create_issue_post(request):
             # Save AI verification results
             if verification_result and "error" not in verification_result:
                 issue.is_verified = verification_result.get("is_verified", False)
-                issue.verification_method = "openai" if getattr(settings, "OPENAI_API_KEY", None) else "huggingface"
+                issue.verification_method = "gemini" if getattr(settings, "GEMINI_API_KEY", None) else "huggingface"
                 issue.verification_score = verification_result.get("score")
                 issue.verification_details = verification_result.get("details")
                 issue.save()
@@ -312,6 +312,9 @@ def saved_posts_view(request):
     page_obj = paginator.get_page(page_number)
     
     return render(request, 'issues/saved_posts.html', {'saved_posts': page_obj})
+# def proof_image_upload_path(instance, filename):
+#     filename = filename.replace(" ", "_")  # replace spaces with underscore
+#     return f'tasks/{filename}'
 
 @login_required
 def tasks(request):
@@ -323,15 +326,14 @@ def tasks(request):
             task.reported_latitude = form.cleaned_data.get("reported_latitude")
             task.reported_longitude = form.cleaned_data.get("reported_longitude")
             task.save()
-
             title = (form.cleaned_data.get("title") or "").strip()
             description = (form.cleaned_data.get("description") or "").strip()
             text_query = f"Verify and score EcoCoins for: {title}. {description}"
             verification_result = {"error": "No verifier configured"}
 
             try:
-                if getattr(settings, "OPENAI_API_KEY", None):
-                    verification_result = verify_task_image_openai(task.proof_image.path, text_query)
+                if getattr(settings, "GEMINI_API_KEY", None):
+                    verification_result = verify_task_image_gemini(task.proof_image.path, text_query)
                 elif getattr(settings, "HF_API_KEY", None):
                     verification_result = verify_issue_image_huggingface(task.proof_image.path, text_query=text_query)
             except Exception as e:
@@ -339,7 +341,7 @@ def tasks(request):
 
             if verification_result and "error" not in verification_result:
                 task.is_verified = verification_result.get("is_verified", False)
-                task.verification_method = "openai" if getattr(settings, "OPENAI_API_KEY", None) else "huggingface"
+                task.verification_method = "gemini" if getattr(settings, "GEMINI_API_KEY", None) else "huggingface"
                 task.verification_score = verification_result.get("score")
                 task.verification_details = verification_result.get("details")
                 task.eco_coins_awarded = verification_result.get("eco_coins", 0)
