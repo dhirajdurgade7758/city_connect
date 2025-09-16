@@ -146,6 +146,10 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
+<<<<<<< HEAD
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+=======
+OPENAI_API_KEY = "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"
+>>>>>>> b22decd (working code)
 HF_API_KEY = os.getenv("HF_API_KEY")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
